@@ -66,9 +66,17 @@ cp .env.example .env
 ```
 
 3. Isi variabel berikut di `.env`:
+
 - `DATABASE_URL`
+- `DIRECT_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+Catatan deploy (Vercel):
+
+- Jika `db.<ref>.supabase.co` tidak bisa diakses dari environment deploy (umumnya karena IPv6-only), gunakan connection string **pooler** Supabase sebagai `DATABASE_URL` (port 6543).
+- Simpan connection string direct sebagai `DIRECT_URL` untuk kebutuhan migrasi (port 5432).
+- Jika memakai pooler (PgBouncer) dan muncul error `prepared statement "...\" does not exist`, pastikan `DATABASE_URL` menyertakan `pgbouncer=true&statement_cache_size=0`.
 
 4. Generate Prisma Client:
 
@@ -99,6 +107,7 @@ App akan tersedia di `http://localhost:3000`.
 ## Akun dan Role
 
 Role yang digunakan:
+
 - `owner`
 - `admin`
 - `cashier`
