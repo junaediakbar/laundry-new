@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation"
 
 import { createPaymentAction, updateWorkflowAction } from "@/actions/order-actions"
+import { upsertWorkAssignmentAction } from "@/actions/work-actions"
 import { OrderDetailForms } from "@/components/orders/order-detail-forms"
+import { OrderWorkAssignments } from "@/components/orders/order-work-assignments"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -10,20 +12,78 @@ import { prisma } from "@/lib/prisma"
 
 const workflowOptions = ["received", "washing", "drying", "ironing", "finished", "picked_up"]
 
+type EmployeeOption = { id: string; name: string }
+
+type WorkAssignmentRow = {
+  id: string
+  orderItemId: string
+  taskType: string
+  employee: EmployeeOption
+  percent: { toString(): string }
+  amount: { toString(): string }
+}
+
+type OrderItemRow = {
+  id: string
+  quantity: { toString(): string }
+  unitPrice: { toString(): string }
+  discount: { toString(): string }
+  total: { toString(): string }
+  serviceType: { name: string; unit: string }
+  workAssignments: WorkAssignmentRow[]
+}
+
+type PaymentRow = {
+  id: string
+  paidAt: Date
+  method: string
+  amount: { toString(): string }
+  note: string | null
+}
+
+type OrderDetail = {
+  id: string
+  invoiceNumber: string
+  customer: { name: string }
+  total: { toString(): string }
+  paymentStatus: string
+  workflowStatus: string
+  receivedDate: Date
+  pickupDate: Date | null
+  items: OrderItemRow[]
+  payments: PaymentRow[]
+}
+
 export default async function OrderDetailPage({ params }: { params: { id: string } }) {
-  const order = await prisma.order.findUnique({
-    where: { id: params.id },
-    include: {
-      customer: true,
-      items: {
-        include: { serviceType: true },
-        orderBy: { createdAt: "asc" },
+  const prismaOrder = prisma as unknown as {
+    order: {
+      findUnique(args: unknown): Promise<OrderDetail | null>
+    }
+    employee: {
+      findMany(args: unknown): Promise<EmployeeOption[]>
+    }
+  }
+
+  const [order, employees] = await Promise.all([
+    prismaOrder.order.findUnique({
+      where: { id: params.id },
+      include: {
+        customer: true,
+        items: {
+          include: { serviceType: true, workAssignments: { include: { employee: true } } },
+          orderBy: { createdAt: "asc" },
+        },
+        payments: {
+          orderBy: { paidAt: "desc" },
+        },
       },
-      payments: {
-        orderBy: { paidAt: "desc" },
-      },
-    },
-  })
+    }),
+    prismaOrder.employee.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ])
 
   if (!order) {
     notFound()
@@ -131,6 +191,8 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           </Table>
         </div>
       </Card>
+
+      <OrderWorkAssignments orderId={orderId} items={order.items} employees={employees} upsertWorkAssignment={upsertWorkAssignmentAction} />
 
       <OrderDetailForms
         orderId={orderId}

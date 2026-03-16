@@ -7,8 +7,20 @@ import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { prisma } from "@/lib/prisma"
 
+type CustomerDetailRow = {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  address: string | null
+  notes: string | null
+  latitude: { toString(): string } | number | null
+  longitude: { toString(): string } | number | null
+  orders: Array<{ id: string; invoiceNumber: string; total: { toString(): string } | number; workflowStatus: string }>
+}
+
 export default async function CustomerDetailPage({ params }: { params: { id: string } }) {
-  const customer = await prisma.customer.findUnique({
+  const customer = (await prisma.customer.findUnique({
     where: { id: params.id },
     include: {
       orders: {
@@ -16,11 +28,15 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
         take: 10,
       },
     },
-  })
+  })) as unknown as CustomerDetailRow | null
 
   if (!customer) {
     notFound()
   }
+
+  const lat = customer.latitude != null ? Number(customer.latitude) : null
+  const lng = customer.longitude != null ? Number(customer.longitude) : null
+  const mapsHref = lat != null && lng != null ? `https://www.google.com/maps?q=${lat},${lng}` : null
 
   return (
     <div>
@@ -44,6 +60,15 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Alamat</p>
               <p className="text-sm font-medium">{customer.address ?? "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Koordinat</p>
+              <p className="text-sm font-medium">{lat != null && lng != null ? `${lat}, ${lng}` : "-"}</p>
+              {mapsHref ? (
+                <a href={mapsHref} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground underline underline-offset-4">
+                  Buka di Google Maps
+                </a>
+              ) : null}
             </div>
             <div className="space-y-1 sm:col-span-2">
               <p className="text-sm text-muted-foreground">Catatan</p>

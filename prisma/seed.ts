@@ -3,7 +3,48 @@ import { PrismaClient } from '@prisma/client';
 
 loadEnvConfig(process.cwd());
 
-const prisma = new PrismaClient();
+function normalizeDatabaseUrl(rawUrl: string) {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return rawUrl;
+  }
+
+  const hostname = url.hostname.toLowerCase();
+  const isLikelyPooler =
+    hostname.includes('pooler') ||
+    url.port === '6543' ||
+    url.searchParams.get('pgbouncer') === 'true';
+  if (!isLikelyPooler) {
+    return rawUrl;
+  }
+
+  if (!url.searchParams.has('pgbouncer')) {
+    url.searchParams.set('pgbouncer', 'true');
+  }
+  if (!url.searchParams.has('statement_cache_size')) {
+    url.searchParams.set('statement_cache_size', '0');
+  }
+  if (!url.searchParams.has('connection_limit')) {
+    url.searchParams.set('connection_limit', '1');
+  }
+
+  return url.toString();
+}
+
+const databaseUrlRaw = process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? '';
+if (!databaseUrlRaw) {
+  throw new Error('DATABASE_URL / DIRECT_URL belum diisi.');
+}
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: normalizeDatabaseUrl(databaseUrlRaw),
+    },
+  },
+});
 
 function pad3(value: number) {
   return `${value}`.padStart(3, '0');
@@ -33,11 +74,26 @@ function randomPastDate(daysBackMax: number) {
 
 async function main() {
   const serviceTypes = [
-    { name: 'Cuci Kering', unit: 'kg', defaultPrice: 7000 },
-    { name: 'Cuci Setrika', unit: 'kg', defaultPrice: 9000 },
-    { name: 'Setrika Saja', unit: 'kg', defaultPrice: 6000 },
-    { name: 'Express', unit: 'kg', defaultPrice: 12000 },
-    { name: 'Bed Cover', unit: 'item', defaultPrice: 25000 },
+    { name: 'Karpet Malaysia Tipis', unit: 'm2', defaultPrice: 20000 },
+    { name: 'Karpet Malaysia Tebal', unit: 'm2', defaultPrice: 25000 },
+    { name: 'Karpet Permadani Tipis', unit: 'm2', defaultPrice: 15000 },
+    { name: 'Karpet Permadani Tebal', unit: 'm2', defaultPrice: 18000 },
+    { name: 'Kasur Karakter Tipis', unit: 'm2', defaultPrice: 25000 },
+    { name: 'Kasur Karakter Tebal', unit: 'm2', defaultPrice: 30000 },
+    { name: 'Kasur Bulu Tipis', unit: 'm2', defaultPrice: 25000 },
+    { name: 'Kasur Bulu Tebal', unit: 'm2', defaultPrice: 30000 },
+    { name: 'Kasur Bulu Super Tebal', unit: 'm2', defaultPrice: 35000 },
+    { name: 'Karpet Rol Polos Tipis', unit: 'm2', defaultPrice: 12000 },
+    { name: 'Karpet Rol Tebal/ blk anyam', unit: 'm2', defaultPrice: 15000 },
+    { name: 'Karpet Masjid Tipis', unit: 'm2', defaultPrice: 18000 },
+    { name: 'Karpet Masjid Tebal', unit: 'm2', defaultPrice: 22000 },
+    { name: 'Karpet Masjid Super Tebal', unit: 'm2', defaultPrice: 30000 },
+    { name: 'Karpet Turki Tipis', unit: 'm2', defaultPrice: 20000 },
+    { name: 'Karpet Turki Tebal', unit: 'm2', defaultPrice: 25000 },
+    { name: 'Karpet Bulu Tipis', unit: 'm2', defaultPrice: 17000 },
+    { name: 'Karpet Bulu Tebal', unit: 'm2', defaultPrice: 20000 },
+    { name: 'Ambal', unit: 'm2', defaultPrice: 10000 },
+    { name: 'Rumbai diputihkan/ dibersihkan', unit: 'm1', defaultPrice: 2000 },
   ];
 
   for (const serviceType of serviceTypes) {
@@ -99,6 +155,44 @@ async function main() {
     },
   });
 
+  const prismaEmployee = prisma as unknown as {
+    employee: {
+      count(args?: unknown): Promise<number>;
+      createMany(args: unknown): Promise<unknown>;
+      findMany(args: unknown): Promise<Array<{ id: string; name: string }>>;
+    };
+  };
+
+  const employeeCount = await prismaEmployee.employee.count();
+  if (employeeCount === 0) {
+    await prismaEmployee.employee.createMany({
+      data: [
+        { name: 'Driver A', isActive: true },
+        { name: 'Driver B', isActive: true },
+        { name: 'Operator 1', isActive: true },
+        { name: 'Operator 2', isActive: true },
+        { name: 'Operator 3', isActive: true },
+        { name: 'Packing 1', isActive: true },
+      ],
+    });
+  }
+
+  const employees = await prismaEmployee.employee.findMany({
+    where: { isActive: true },
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true },
+  });
+
+  const driverEmployees = employees.filter((e) =>
+    e.name.toLowerCase().includes('driver'),
+  );
+  const packingEmployees = employees.filter((e) =>
+    e.name.toLowerCase().includes('packing'),
+  );
+  const operatorEmployees = employees.filter(
+    (e) => !driverEmployees.some((d) => d.id === e.id),
+  );
+
   const activeServiceTypes = await prisma.serviceType.findMany({
     where: { isActive: true },
     select: { id: true, unit: true, defaultPrice: true },
@@ -108,8 +202,27 @@ async function main() {
     throw new Error('Service types belum tersedia untuk seeding.');
   }
 
-  const customerCount = 500;
-  const orderCount = 500;
+  const customerCount = Math.max(
+    1,
+    Number(process.env.SEED_CUSTOMER_COUNT ?? 500) || 500,
+  );
+  const orderCount = Math.max(
+    1,
+    Number(process.env.SEED_ORDER_COUNT ?? 500) || 500,
+  );
+
+  const paluLocations = [
+    { name: 'Palu Barat - Lere', address: 'Kel. Lere, Kec. Palu Barat, Kota Palu', lat: -0.8929, lng: 119.8554 },
+    { name: 'Palu Barat - Siranindi', address: 'Kel. Siranindi, Kec. Palu Barat, Kota Palu', lat: -0.8873, lng: 119.8497 },
+    { name: 'Palu Timur - Talise', address: 'Kel. Talise, Kec. Mantikulore, Kota Palu', lat: -0.8773, lng: 119.8891 },
+    { name: 'Palu Timur - Besusu', address: 'Kel. Besusu Tengah, Kec. Palu Timur, Kota Palu', lat: -0.9037, lng: 119.8686 },
+    { name: 'Palu Selatan - Birobuli', address: 'Kel. Birobuli Utara, Kec. Palu Selatan, Kota Palu', lat: -0.9182, lng: 119.8852 },
+    { name: 'Palu Selatan - Petobo', address: 'Kel. Petobo, Kec. Palu Selatan, Kota Palu', lat: -0.9462, lng: 119.8492 },
+    { name: 'Mantikulore - Tondo', address: 'Kel. Tondo, Kec. Mantikulore, Kota Palu', lat: -0.8359, lng: 119.8999 },
+    { name: 'Tatanga - Duyu', address: 'Kel. Duyu, Kec. Tatanga, Kota Palu', lat: -0.9308, lng: 119.8738 },
+    { name: 'Ulujadi - Silae', address: 'Kel. Silae, Kec. Ulujadi, Kota Palu', lat: -0.8722, lng: 119.8408 },
+    { name: 'Palu Utara - Mamboro', address: 'Kel. Mamboro Barat, Kec. Palu Utara, Kota Palu', lat: -0.8022, lng: 119.8459 },
+  ];
 
   const customerEmails: string[] = [];
   const customerData = Array.from({ length: customerCount }).map((_, index) => {
@@ -119,10 +232,13 @@ async function main() {
 
     const createdAt = randomPastDate(180);
     const phone = `08${`${index + 1}`.padStart(10, '0')}`;
+    const palu = index < paluLocations.length ? paluLocations[index] : null;
     return {
-      name: `Pelanggan ${seq}`,
+      name: palu ? `${palu.name} (${seq})` : `Pelanggan ${seq}`,
       phone,
-      address: `Jl. Contoh No. ${randInt(1, 250)}`,
+      address: palu ? palu.address : `Jl. Contoh No. ${randInt(1, 250)}`,
+      latitude: palu ? palu.lat : null,
+      longitude: palu ? palu.lng : null,
       email,
       notes: index % 7 === 0 ? 'Pelanggan langganan' : null,
       createdAt,
@@ -154,13 +270,35 @@ async function main() {
     'received' | 'washing' | 'drying' | 'ironing' | 'finished' | 'picked_up'
   > = ['received', 'washing', 'drying', 'ironing', 'finished', 'picked_up'];
 
+  const pickupTasks: Array<{ taskType: string; percent: number }> = [
+    { taskType: 'pickup', percent: 5 },
+    { taskType: 'dropoff', percent: 5 },
+    { taskType: 'fuel_vehicle', percent: 5 },
+    { taskType: 'driver', percent: 5 },
+  ];
+
+  const workTasks: Array<{ taskType: string; percent: number }> = [
+    { taskType: 'dust_removal', percent: 5 },
+    { taskType: 'brushing', percent: 5 },
+    { taskType: 'rinse_sprayer', percent: 5 },
+    { taskType: 'spin_dry', percent: 5 },
+    { taskType: 'finishing_packing', percent: 10 },
+  ];
+
   const invoices: string[] = [];
   const paymentPlanByInvoice = new Map<
     string,
     { payments: Array<{ amountCents: number; paidAt: Date; method: string }> }
   >();
 
+  const prismaWork = prisma as unknown as {
+    workAssignment: {
+      createMany(args: unknown): Promise<unknown>;
+    };
+  };
+
   const orders: Array<{ id: string; invoiceNumber: string }> = [];
+  let workAssignmentCreated = 0;
 
   for (let index = 0; index < orderCount; index++) {
     const customer = customers[index % customers.length];
@@ -302,10 +440,63 @@ async function main() {
           })),
         },
       },
-      select: { id: true, invoiceNumber: true },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        items: { select: { id: true, total: true } },
+      },
     });
 
-    orders.push(created);
+    orders.push({ id: created.id, invoiceNumber: created.invoiceNumber });
+
+    if (employees.length > 0) {
+      const roll = randInt(1, 100);
+      const assignPickup = roll <= 85;
+      const assignWork = roll <= 70 || (roll > 85 && roll <= 95);
+
+      const assignmentData: Array<{
+        orderId: string;
+        orderItemId: string;
+        employeeId: string;
+        taskType: string;
+        percent: string;
+        amount: string;
+      }> = [];
+
+      for (const item of created.items) {
+        const itemTotal = Number(item.total.toString());
+
+        const tasks = [
+          ...(assignPickup ? pickupTasks : []),
+          ...(assignWork ? workTasks : []),
+        ];
+
+        for (const task of tasks) {
+          const pool =
+            task.taskType === 'finishing_packing'
+              ? packingEmployees
+              : task.taskType === 'driver'
+                ? driverEmployees
+                : operatorEmployees;
+
+          const employee = pickOne(pool.length > 0 ? pool : employees);
+          const amount = Math.max((itemTotal * task.percent) / 100, 0);
+          assignmentData.push({
+            orderId: created.id,
+            orderItemId: item.id,
+            employeeId: employee.id,
+            taskType: task.taskType,
+            percent: task.percent.toFixed(2),
+            amount: amount.toFixed(2),
+          });
+        }
+      }
+
+      if (assignmentData.length > 0) {
+        await prismaWork.workAssignment.createMany({ data: assignmentData });
+        workAssignmentCreated += assignmentData.length;
+      }
+    }
   }
 
   const paymentData = orders.flatMap((order) => {
@@ -335,6 +526,7 @@ async function main() {
           orders: orderCount,
           payments: paymentData.length,
           serviceTypes: activeServiceTypes.length,
+          workAssignments: workAssignmentCreated,
         },
       },
       null,
