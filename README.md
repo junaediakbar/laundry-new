@@ -76,7 +76,7 @@ Catatan deploy (Vercel):
 
 - Jika `db.<ref>.supabase.co` tidak bisa diakses dari environment deploy (umumnya karena IPv6-only), gunakan connection string **pooler** Supabase sebagai `DATABASE_URL` (port 6543).
 - Simpan connection string direct sebagai `DIRECT_URL` untuk kebutuhan migrasi (port 5432).
-- Jika memakai pooler (PgBouncer) dan muncul error `prepared statement "...\" does not exist`, pastikan `DATABASE_URL` menyertakan `pgbouncer=true&statement_cache_size=0`.
+- Jika memakai pooler (PgBouncer) dan muncul error `prepared statement "...\" does not exist` / `already exists`, pastikan `DATABASE_URL` menyertakan `pgbouncer=true&statement_cache_size=0&connection_limit=1`.
 
 4. Generate Prisma Client:
 

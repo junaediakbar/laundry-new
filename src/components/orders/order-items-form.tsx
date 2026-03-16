@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
+import { Trash2 } from "lucide-react"
+
+
 
 type ServiceTypeOption = {
   id: string
@@ -19,6 +22,8 @@ type OrderItemDraft = {
   quantity: number
   unitPrice: number
   discount: number
+  length?: number
+  width?: number
 }
 
 type OrderItemsFormProps = {
@@ -68,6 +73,8 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
           const selected = serviceTypes.find((s) => s.id === item.serviceTypeId)
           const lineTotal = Math.max(item.quantity * item.unitPrice - item.discount, 0)
           const rowKey = `${index}-${item.serviceTypeId}`
+          const isM2 = selected?.unit === "m2"
+          const isM1 = selected?.unit === "m1"
 
           return (
             <div key={rowKey} className="rounded-lg border bg-background p-3">
@@ -84,10 +91,10 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                         prev.map((p, i) =>
                           i === index
                             ? {
-                                ...p,
-                                serviceTypeId: nextId,
-                                unitPrice: nextService ? nextService.defaultPrice : p.unitPrice,
-                              }
+                              ...p,
+                              serviceTypeId: nextId,
+                              unitPrice: nextService ? nextService.defaultPrice : p.unitPrice,
+                            }
                             : p,
                         ),
                       )
@@ -102,23 +109,110 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                   </Select>
                 </div>
 
-                <div className="md:col-span-2">
-                  <Label htmlFor={`quantity-${index}`}>Qty</Label>
-                  <Input
-                    id={`quantity-${index}`}
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={item.quantity}
-                    onChange={(e) => {
-                      const value = Number(e.target.value || 0)
-                      setItems((prev) => prev.map((p, i) => (i === index ? { ...p, quantity: value } : p)))
-                    }}
-                  />
-                  {selected ? (
-                    <p className="mt-1 text-xs text-muted-foreground">Unit: {selected.unit}</p>
-                  ) : null}
-                </div>
+                {isM2 ? (
+                  <>
+                    <div className="md:col-span-2">
+                      <Label htmlFor={`length-${index}`}>Panjang (m)</Label>
+                      <Input
+                        id={`length-${index}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.length ?? 0}
+                        onFocus={(e) => {
+                          if (e.currentTarget.value === "0") {
+                            e.currentTarget.select()
+                          }
+                        }}
+                        onChange={(e) => {
+                          const nextLength = Number(e.target.value || 0)
+                          setItems((prev) =>
+                            prev.map((p, i) => {
+                              if (i !== index) return p
+                              const width = p.width ?? 0
+                              const qty = Math.max(nextLength * width, 0)
+                              return { ...p, length: nextLength, quantity: qty }
+                            }),
+                          )
+                        }}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor={`width-${index}`}>Lebar (m)</Label>
+                      <Input
+                        id={`width-${index}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.width ?? 0}
+                        onFocus={(e) => {
+                          if (e.currentTarget.value === "0") {
+                            e.currentTarget.select()
+                          }
+                        }}
+                        onChange={(e) => {
+                          const nextWidth = Number(e.target.value || 0)
+                          setItems((prev) =>
+                            prev.map((p, i) => {
+                              if (i !== index) return p
+                              const length = p.length ?? 0
+                              const qty = Math.max(length * nextWidth, 0)
+                              return { ...p, width: nextWidth, quantity: qty }
+                            }),
+                          )
+                        }}
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">Qty dihitung otomatis (m2)</p>
+                    </div>
+                  </>
+                ) : isM1 ? (
+                  <>
+                    <div className="md:col-span-2">
+                      <Label htmlFor={`length-${index}`}>Panjang (m)</Label>
+                      <Input
+                        id={`length-${index}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.length ?? 0}
+                        onFocus={(e) => {
+                          if (e.currentTarget.value === "0") {
+                            e.currentTarget.select()
+                          }
+                        }}
+                        onChange={(e) => {
+                          const nextLength = Number(e.target.value || 0)
+                          setItems((prev) =>
+                            prev.map((p, i) =>
+                              i === index ? { ...p, length: nextLength, quantity: Math.max(nextLength, 0) } : p,
+                            ),
+                          )
+                        }}
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">Qty dihitung otomatis (m1)</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor={`quantity-${index}`}>Qty</Label>
+                      <Input id={`quantity-${index}`} type="number" value={item.quantity} disabled />
+                    </div>
+                  </>
+                ) : (
+                  <div className="md:col-span-2">
+                    <Label htmlFor={`quantity-${index}`}>Qty</Label>
+                    <Input
+                      id={`quantity-${index}`}
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const value = Number(e.target.value || 0)
+                        setItems((prev) => prev.map((p, i) => (i === index ? { ...p, quantity: value } : p)))
+                      }}
+                    />
+                    {selected ? <p className="mt-1 text-xs text-muted-foreground">Unit: {selected.unit}</p> : null}
+                  </div>
+                )}
 
                 <div className="md:col-span-2">
                   <Label htmlFor={`unitPrice-${index}`}>Harga</Label>
@@ -127,6 +221,11 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                     type="number"
                     min="0"
                     value={item.unitPrice}
+                    onFocus={(e) => {
+                      if (e.currentTarget.value === "0") {
+                        e.currentTarget.select()
+                      }
+                    }}
                     onChange={(e) => {
                       const value = Number(e.target.value || 0)
                       setItems((prev) => prev.map((p, i) => (i === index ? { ...p, unitPrice: value } : p)))
@@ -141,6 +240,11 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                     type="number"
                     min="0"
                     value={item.discount}
+                    onFocus={(e) => {
+                      if (e.currentTarget.value === "0") {
+                        e.currentTarget.select()
+                      }
+                    }}
                     onChange={(e) => {
                       const value = Number(e.target.value || 0)
                       setItems((prev) => prev.map((p, i) => (i === index ? { ...p, discount: value } : p)))
@@ -157,7 +261,7 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                     disabled={items.length === 1}
                     onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))}
                   >
-                    Hapus
+                    <Trash2 className="w-10 h-10" />
                   </Button>
                 </div>
               </div>

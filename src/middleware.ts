@@ -1,12 +1,12 @@
-import { createServerClient } from "@supabase/ssr"
-import { NextResponse, type NextRequest } from "next/server"
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
     },
-  })
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,57 +14,61 @@ export async function middleware(request: NextRequest) {
     {
       cookies: {
         get(name: string) {
-          return request.cookies.get(name)?.value
+          return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options) {
-          request.cookies.set({ name, value, ...options })
+          request.cookies.set({ name, value, ...options });
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
-          })
-          response.cookies.set({ name, value, ...options })
+          });
+          response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options) {
-          request.cookies.set({ name, value: "", ...options })
+          request.cookies.set({ name, value: '', ...options });
           response = NextResponse.next({
             request: {
               headers: request.headers,
             },
-          })
-          response.cookies.set({ name, value: "", ...options })
+          });
+          response.cookies.set({ name, value: '', ...options });
         },
       },
     },
-  )
+  );
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl
-  const isAuthPage = pathname.startsWith("/login")
+  const { pathname } = request.nextUrl;
+  const isAuthPage = pathname.startsWith('/login');
   const isProtectedPath =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/customers") ||
-    pathname.startsWith("/orders") ||
-    pathname.startsWith("/reports")
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/customers') ||
+    pathname.startsWith('/orders') ||
+    pathname.startsWith('/service-types') ||
+    pathname.startsWith('/delivery-planning') ||
+    pathname.startsWith('/employees') ||
+    pathname.startsWith('/reports') ||
+    pathname.startsWith('/whatsapp');
 
   if (!user && isProtectedPath) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/login"
-    return NextResponse.redirect(url)
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
   }
 
   if (user && isAuthPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/dashboard"
-    return NextResponse.redirect(url)
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard';
+    return NextResponse.redirect(url);
   }
 
-  return response
+  return response;
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
-}
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+};
