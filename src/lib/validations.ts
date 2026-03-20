@@ -45,6 +45,8 @@ export const serviceTypeSchema = z.object({
 
 export const orderSchema = z.object({
   customerId: z.string().min(1, 'Pelanggan wajib dipilih'),
+  receivedDate: z.string().optional(),
+  completedDate: z.string().optional(),
   items: z
     .array(
       z.object({

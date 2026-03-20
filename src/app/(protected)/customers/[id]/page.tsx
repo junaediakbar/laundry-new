@@ -96,7 +96,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
               {customer.orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">
-                    <Link href={`/orders/${order.id}`}>
+                    <Link href={`/orders/${order.id}`} prefetch={false}>
                       <Button variant="secondary" size="sm">
                         {order.invoiceNumber}
                       </Button>

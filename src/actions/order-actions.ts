@@ -6,6 +6,13 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { orderSchema, paymentSchema } from '@/lib/validations';
 
+function parseDateOnly(value: string) {
+  const raw = value.trim();
+  if (!raw) return null;
+  const date = new Date(`${raw}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 async function generateInvoiceNumber() {
   const now = new Date();
   const datePart = `${now.getFullYear()}${`${now.getMonth() + 1}`.padStart(2, '0')}${`${now.getDate()}`.padStart(2, '0')}`;
@@ -33,6 +40,8 @@ export async function createOrderAction(formData: FormData) {
 
   const parsed = orderSchema.safeParse({
     customerId: formData.get('customerId'),
+    receivedDate: formData.get('receivedDate'),
+    completedDate: formData.get('completedDate'),
     items,
     note: formData.get('note'),
   });
@@ -48,11 +57,23 @@ export async function createOrderAction(formData: FormData) {
   const total = itemsWithTotal.reduce((sum, item) => sum + item.total, 0);
   const invoiceNumber = await generateInvoiceNumber();
 
+  const receivedDate =
+    typeof parsed.data.receivedDate === 'string'
+      ? (parseDateOnly(parsed.data.receivedDate) ?? new Date())
+      : new Date();
+
+  const completedDate =
+    typeof parsed.data.completedDate === 'string'
+      ? parseDateOnly(parsed.data.completedDate)
+      : null;
+
   const order = await prisma.order.create({
     data: {
       invoiceNumber,
       customerId: parsed.data.customerId,
       total,
+      receivedDate,
+      completedDate,
       note: parsed.data.note || null,
       items: {
         create: itemsWithTotal.map((item) => ({
@@ -89,15 +110,21 @@ export async function updateWorkflowAction(
   const data =
     workflowStatus === 'picked_up'
       ? { workflowStatus: 'picked_up' as const, pickupDate: new Date() }
-      : {
-          workflowStatus: workflowStatus as
-            | 'received'
-            | 'washing'
-            | 'drying'
-            | 'ironing'
-            | 'finished',
-          pickupDate: null,
-        };
+      : workflowStatus === 'finished'
+        ? {
+            workflowStatus: 'finished' as const,
+            pickupDate: null,
+            completedDate: new Date(),
+          }
+        : {
+            workflowStatus: workflowStatus as
+              | 'received'
+              | 'washing'
+              | 'drying'
+              | 'ironing',
+            pickupDate: null,
+            completedDate: null,
+          };
 
   await prisma.order.update({
     where: { id: orderId },

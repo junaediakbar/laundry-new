@@ -24,11 +24,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
   const where = q
     ? {
-        OR: [
-          { invoiceNumber: { contains: q, mode: "insensitive" as const } },
-          { customer: { name: { contains: q, mode: "insensitive" as const } } },
-        ],
-      }
+      OR: [
+        { invoiceNumber: { contains: q, mode: "insensitive" as const } },
+        { customer: { name: { contains: q, mode: "insensitive" as const } } },
+      ],
+    }
     : undefined
 
   const [orders, totalOrders] = await Promise.all([
@@ -107,7 +107,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                     <StatusBadge type="workflow" value={order.workflowStatus} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <Link href={`/orders/${order.id}`}>
+                    <Link href={`/orders/${order.id}`} prefetch={false}>
                       <Button size="sm" variant="outline">
                         Detail
                       </Button>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { createPaymentAction, updateWorkflowAction } from "@/actions/order-actions"
 import { upsertWorkAssignmentAction } from "@/actions/work-actions"
 import { OrderDetailForms } from "@/components/orders/order-detail-forms"
+import { OrderAttachments } from "@/components/orders/order-attachments"
 import { OrderWorkAssignments } from "@/components/orders/order-work-assignments"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { Card } from "@/components/ui/card"
@@ -49,9 +50,11 @@ type OrderDetail = {
   paymentStatus: string
   workflowStatus: string
   receivedDate: Date
+  completedDate: Date | null
   pickupDate: Date | null
   items: OrderItemRow[]
   payments: PaymentRow[]
+  attachments: Array<{ id: string; filePath: string; createdAt: Date }>
 }
 
 export default async function OrderDetailPage({ params }: { params: { id: string } }) {
@@ -73,6 +76,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           include: { serviceType: true, workAssignments: { include: { employee: true } } },
           orderBy: { createdAt: "asc" },
         },
+        attachments: { orderBy: { createdAt: "desc" } },
         payments: {
           orderBy: { paidAt: "desc" },
         },
@@ -140,6 +144,12 @@ export default async function OrderDetailPage({ params }: { params: { id: string
               <p className="text-sm font-medium">{formatDate(order.receivedDate)}</p>
             </div>
             <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Selesai</p>
+              <p className="text-sm font-medium">
+                {order.completedDate ? formatDate(order.completedDate) : "-"}
+              </p>
+            </div>
+            <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Diambil</p>
               <p className="text-sm font-medium">
                 {order.pickupDate ? formatDate(order.pickupDate) : "-"}
@@ -193,6 +203,11 @@ export default async function OrderDetailPage({ params }: { params: { id: string
       </Card>
 
       <OrderWorkAssignments orderId={orderId} items={order.items} employees={employees} upsertWorkAssignment={upsertWorkAssignmentAction} />
+
+      <OrderAttachments
+        orderId={orderId}
+        attachments={order.attachments.map((a) => ({ id: a.id, filePath: a.filePath, createdAt: a.createdAt.toISOString() }))}
+      />
 
       <OrderDetailForms
         orderId={orderId}

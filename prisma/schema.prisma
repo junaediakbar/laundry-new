@@ -111,6 +111,7 @@ model Order {
   paymentStatus  PaymentStatus  @default(unpaid) @map("payment_status")
   workflowStatus WorkflowStatus @default(received) @map("workflow_status")
   receivedDate   DateTime       @default(now()) @map("received_date")
+  completedDate  DateTime?      @map("completed_date")
   pickupDate     DateTime?      @map("pickup_date")
   note           String?
   createdAt      DateTime       @default(now()) @map("created_at")
@@ -121,6 +122,7 @@ model Order {
   payments     Payment[]
   items        OrderItem[]
   workAssignments WorkAssignment[]
+  attachments  OrderAttachment[]
 
   @@index([invoiceNumber])
   @@index([paymentStatus, workflowStatus])
@@ -181,6 +183,20 @@ model Payment {
 
   @@index([orderId])
   @@map("payments")
+}
+
+model OrderAttachment {
+  id        String   @id @default(cuid())
+  orderId   String   @map("order_id")
+  filePath  String   @map("file_path")
+  mimeType  String?  @map("mime_type")
+  sizeBytes Int?     @map("size_bytes")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_attachments")
 }
 
 model DeliveryPlan {
