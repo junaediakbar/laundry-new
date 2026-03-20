@@ -1,7 +1,6 @@
-import Link from "next/link"
-
 import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
+import { NavigateButton } from "@/components/shared/navigate-button"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -107,11 +106,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                     <StatusBadge type="workflow" value={order.workflowStatus} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <Link href={`/orders/${order.id}`} prefetch={false}>
-                      <Button size="sm" variant="outline">
-                        Detail
-                      </Button>
-                    </Link>
+                    <NavigateButton href={`/orders/${order.id}`} label="Detail" />
                   </TableCell>
                 </TableRow>
               ))}

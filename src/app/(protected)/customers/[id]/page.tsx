@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/page-header"
+import { NavigateButton } from "@/components/shared/navigate-button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { prisma } from "@/lib/prisma"
@@ -96,11 +97,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
               {customer.orders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">
-                    <Link href={`/orders/${order.id}`} prefetch={false}>
-                      <Button variant="secondary" size="sm">
-                        {order.invoiceNumber}
-                      </Button>
-                    </Link>
+                    <NavigateButton href={`/orders/${order.id}`} label={order.invoiceNumber} variant="secondary" />
                   </TableCell>
                   <TableCell>{Number(order.total).toLocaleString("id-ID")}</TableCell>
                   <TableCell className="capitalize">{order.workflowStatus.replace("_", " ")}</TableCell>
