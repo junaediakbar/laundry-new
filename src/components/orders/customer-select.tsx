@@ -1,52 +1,49 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { searchCustomersAction } from "@/actions/customer-search-actions"
 
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select } from "@/components/ui/select"
+import { SearchableSelect, type SearchableOption } from "@/components/ui/searchable-select"
 
-type CustomerOption = {
-  id: string
-  name: string
-  phone: string | null
-}
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 type CustomerSelectProps = {
-  customers: CustomerOption[]
+  /** Untuk pre-fill saat mode edit (isi dari data order yang sudah ada) */
   defaultCustomerId?: string
+  defaultCustomerName?: string
+  /** Override URL halaman tambah pelanggan baru */
+  addNewHref?: string
+  /** Callback opsional saat pilihan berubah */
+  onChange?: (option: SearchableOption | null) => void
 }
 
-export function CustomerSelect({ customers, defaultCustomerId = "" }: CustomerSelectProps) {
-  const [query, setQuery] = useState("")
-  const [customerId, setCustomerId] = useState(defaultCustomerId)
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return customers
-    return customers.filter((c) => `${c.name} ${c.phone ?? ""}`.toLowerCase().includes(q))
-  }, [customers, query])
-
-  const selected = customers.find((c) => c.id === customerId) ?? null
-
+export function CustomerSelect({
+  defaultCustomerId = "",
+  defaultCustomerName = "",
+  addNewHref = "/customers/new",
+  onChange,
+}: CustomerSelectProps) {
   return (
-    <div className="space-y-2">
-      <input type="hidden" name="customerId" value={customerId} />
-      <Label>Pelanggan</Label>
-      <Input
-        placeholder="Cari nama / telepon..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <Select value={customerId} onChange={(e) => setCustomerId(e.target.value)} required>
-        <option value="">{selected ? `Terpilih: ${selected.name}` : "Pilih pelanggan"}</option>
-        {filtered.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-            {c.phone ? ` (${c.phone})` : ""}
-          </option>
-        ))}
-      </Select>
-    </div>
+    <SearchableSelect
+      name="customerId"
+      label="Pelanggan"
+      placeholder="Pilih pelanggan..."
+      searchPlaceholder="Cari nama / telepon..."
+      defaultValue={defaultCustomerId}
+      defaultLabel={defaultCustomerName}
+      // Server Action langsung dijadikan fetcher —
+      // Next.js menangani serialisasi & keamanan secara otomatis.
+      fetcher={searchCustomersAction}
+      debounceMs={300}
+      addNewHref={addNewHref}
+      addNewLabel="Tambah Pelanggan Baru"
+      required
+      onChange={onChange}
+    />
   )
 }

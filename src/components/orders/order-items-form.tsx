@@ -1,11 +1,11 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select } from "@/components/ui/select"
+import { SearchableSelect, type SearchableOption } from "@/components/ui/searchable-select"
 import { Trash2 } from "lucide-react"
 
 
@@ -48,6 +48,19 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
 
   const serialized = useMemo(() => JSON.stringify(items), [items])
 
+  const serviceTypeFetcher = useCallback(
+    async (query: string): Promise<SearchableOption[]> => {
+      const q = query.trim().toLowerCase()
+      const filtered = q ? serviceTypes.filter((s) => s.name.toLowerCase().includes(q)) : serviceTypes
+      return filtered.map((s) => ({
+        value: s.id,
+        label: s.name,
+        sublabel: `Rp ${formatIdr(s.defaultPrice)}/${s.unit}`,
+      }))
+    },
+    [serviceTypes],
+  )
+
   return (
     <div className="space-y-4">
       <input type="hidden" name="items" value={serialized} />
@@ -60,9 +73,9 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
         <Button
           type="button"
           variant="secondary"
-          onClick={() =>
+          onClick={() => {
             setItems((prev) => [...prev, { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0 }])
-          }
+          }}
         >
           Tambah Baris
         </Button>
@@ -80,12 +93,19 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
             <div key={rowKey} className="rounded-lg border bg-background p-3">
               <div className="grid gap-3 md:grid-cols-12">
                 <div className="md:col-span-5">
-                  <Label htmlFor={`serviceTypeId-${index}`}>Layanan</Label>
-                  <Select
-                    id={`serviceTypeId-${index}`}
-                    value={item.serviceTypeId}
-                    onChange={(e) => {
-                      const nextId = e.target.value
+                  <SearchableSelect
+                    key={`serviceType-${rowKey}`}
+                    name={`serviceTypeId-${index}`}
+                    label="Layanan"
+                    placeholder="Pilih layanan..."
+                    searchPlaceholder="Cari layanan..."
+                    defaultValue={item.serviceTypeId}
+                    defaultLabel={selected?.name ?? ""}
+                    fetcher={serviceTypeFetcher}
+                    debounceMs={200}
+                    required
+                    onChange={(opt) => {
+                      const nextId = opt?.value ?? ""
                       const nextService = serviceTypes.find((s) => s.id === nextId)
                       setItems((prev) =>
                         prev.map((p, i) =>
@@ -99,14 +119,7 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                         ),
                       )
                     }}
-                  >
-                    <option value="">Pilih layanan</option>
-                    {serviceTypes.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.name} ({formatIdr(service.defaultPrice)}/{service.unit})
-                      </option>
-                    ))}
-                  </Select>
+                  />
                 </div>
 
                 {isM2 ? (
@@ -259,7 +272,9 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                     variant="destructive"
                     className="w-full"
                     disabled={items.length === 1}
-                    onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))}
+                    onClick={() => {
+                      setItems((prev) => prev.filter((_, i) => i !== index))
+                    }}
                   >
                     <Trash2 className="w-10 h-10" />
                   </Button>

@@ -12,6 +12,24 @@ export type ApiResponse<T> =
   | { ok: true; data: T }
   | { ok: false; error: ApiError };
 
+export class BackendFetchError extends Error {
+  status: number;
+  code?: string;
+  details?: unknown;
+
+  constructor(
+    status: number,
+    message: string,
+    code?: string,
+    details?: unknown,
+  ) {
+    super(message);
+    this.status = status;
+    this.code = code;
+    this.details = details;
+  }
+}
+
 function backendBaseUrl() {
   const raw = process.env.BACKEND_BASE_URL || 'http://localhost:8080';
   return raw.endsWith('/') ? raw.slice(0, -1) : raw;
@@ -66,7 +84,12 @@ export async function backendFetch<T>(
   if (res.ok) {
     if (wrapped && wrapped.ok === true) return wrapped.data;
     if (wrapped && wrapped.ok === false) {
-      throw new Error(wrapped.error?.message || 'Request failed');
+      throw new BackendFetchError(
+        res.status,
+        wrapped.error?.message || 'Request failed',
+        wrapped.error?.code,
+        wrapped.error?.details,
+      );
     }
     if (parsed != null) return parsed as T;
     return undefined as T;
@@ -92,5 +115,13 @@ export async function backendFetch<T>(
     return `Request failed (${res.status})`;
   })();
 
-  throw new Error(message);
+  const code =
+    wrapped && wrapped.ok === false && wrapped.error?.code
+      ? wrapped.error.code
+      : undefined;
+  const details =
+    wrapped && wrapped.ok === false && wrapped.error?.details
+      ? wrapped.error.details
+      : undefined;
+  throw new BackendFetchError(res.status, message, code, details);
 }

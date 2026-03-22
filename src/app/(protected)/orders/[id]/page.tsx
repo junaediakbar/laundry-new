@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { createPaymentAction, updateWorkflowAction } from "@/actions/order-actions"
@@ -5,11 +6,13 @@ import { upsertWorkAssignmentAction } from "@/actions/work-actions"
 import { OrderDetailForms } from "@/components/orders/order-detail-forms"
 import { OrderAttachments } from "@/components/orders/order-attachments"
 import { OrderWorkAssignments } from "@/components/orders/order-work-assignments"
+import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
+import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/format"
-import { backendFetch } from "@/lib/backend"
+import { BackendFetchError, backendFetch } from "@/lib/backend"
 
 const workflowOptions = ["received", "washing", "drying", "ironing", "finished", "picked_up"]
 
@@ -52,22 +55,56 @@ type OrderDetail = {
   receivedDate: string
   completedDate: string | null
   pickupDate: string | null
+  image?: string | null
   items: OrderItemRow[]
   payments: PaymentRow[]
   attachments: Array<{ id: string; filePath: string; createdAt: string }>
 }
 
 export default async function OrderDetailPage({ params }: { params: { id: string } }) {
-  const [order, employees] = await Promise.all([
-    backendFetch<OrderDetail>(`/api/v1/orders/${params.id}`),
-    backendFetch<EmployeeOption[]>(`/api/v1/employees?active=true`),
-  ]).catch(() => [null, []] as const)
+  const employeesPromise = backendFetch<EmployeeOption[]>(`/api/v1/employees?active=true`).catch(() => [])
+  let order: OrderDetail | null = null
+  let orderError: unknown = null
+  try {
+    order = await backendFetch<OrderDetail>(`/api/v1/orders/${params.id}`)
+  } catch (e) {
+    order = null
+    orderError = e
+  }
+  const employees = await employeesPromise
 
   if (!order) {
-    notFound()
+    if (orderError instanceof BackendFetchError && orderError.status === 404) {
+      notFound()
+    }
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Gagal memuat nota" />
+        <Card>
+          <p className="text-sm text-muted-foreground">
+            {orderError instanceof Error ? orderError.message : "Terjadi kesalahan saat mengambil detail nota."}
+          </p>
+          <div className="mt-4 flex gap-2">
+            <Link href="/orders">
+              <Button variant="outline">Kembali</Button>
+            </Link>
+            <Link href="/login">
+              <Button variant="secondary">Login ulang</Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    )
   }
 
   const orderId = order.id
+  const backendBase = (process.env.BACKEND_BASE_URL || "http://localhost:8080").replace(/\/$/, "")
+  const orderImageUrl =
+    order.image && order.image.length > 0
+      ? order.image.startsWith("http://") || order.image.startsWith("https://")
+        ? order.image
+        : `${backendBase}${order.image.startsWith("/") ? "" : "/"}${order.image}`
+      : null
   const paidAmount = order.payments.reduce(
     (sum: number, payment: { amount: string }) => sum + Number(payment.amount),
     0,
@@ -136,6 +173,17 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           <p className="mt-2 text-3xl font-semibold">{order.payments.length}</p>
         </Card>
       </div>
+
+      <Card>
+        <p className="text-sm text-muted-foreground">Gambar Nota</p>
+        {orderImageUrl ? (
+          <a href={orderImageUrl} target="_blank" rel="noreferrer" className="mt-2 block">
+            <img src={orderImageUrl} alt="order image" className="max-h-80 w-full rounded-md border object-cover" />
+          </a>
+        ) : (
+          <p className="mt-2 text-sm font-medium">-</p>
+        )}
+      </Card>
 
       <Card className="p-0">
         <div className="flex items-center justify-between px-4 py-3">

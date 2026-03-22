@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { backendFetch } from '@/lib/backend';
+import { BackendFetchError, backendFetch } from '@/lib/backend';
 import { orderSchema, paymentSchema } from '@/lib/validations';
 
 export async function createOrderAction(formData: FormData) {
@@ -32,29 +32,38 @@ export async function createOrderAction(formData: FormData) {
     redirect('/orders/new');
   }
 
-  const order = await backendFetch<{ id: string }>('/api/v1/orders', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      customerId: parsed.data.customerId,
-      receivedDate: parsed.data.receivedDate || null,
-      completedDate: parsed.data.completedDate || null,
-      note: parsed.data.note || null,
-      items: parsed.data.items.map((item) => ({
-        serviceTypeId: item.serviceTypeId,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        discount: item.discount,
-      })),
-    }),
-  }).catch(() => null);
+  const file = formData.get('image');
+  const upload = new FormData();
+  upload.set('customerId', parsed.data.customerId);
+  upload.set('receivedDate', parsed.data.receivedDate || '');
+  upload.set('completedDate', parsed.data.completedDate || '');
+  upload.set('note', parsed.data.note || '');
+  upload.set(
+    'items',
+    typeof itemsRaw === 'string' ? itemsRaw : JSON.stringify(parsed.data.items),
+  );
+  if (file instanceof File && file.size > 0) {
+    upload.set('image', file);
+  }
 
-  if (!order) {
-    redirect('/orders/new');
+  try {
+    await backendFetch<{ id: string }>('/api/v1/orders', {
+      method: 'POST',
+      body: upload,
+    });
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      if (e.status === 401) redirect('/login?error=Silakan%20login%20ulang');
+      redirect(`/orders/new?error=${encodeURIComponent(e.message)}`);
+    }
+    if (e instanceof Error) {
+      redirect(`/orders/new?error=${encodeURIComponent(e.message)}`);
+    }
+    redirect('/orders/new?error=Gagal%20membuat%20nota');
   }
 
   revalidatePath('/orders');
-  redirect(`/orders/${order.id}`);
+  redirect('/orders?created=1');
 }
 
 export async function updateWorkflowAction(

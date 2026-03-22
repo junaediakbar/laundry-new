@@ -4,6 +4,8 @@ import { createOrderAction } from "@/actions/order-actions"
 import { CustomerSelect } from "@/components/orders/customer-select"
 import { OrderItemsForm } from "@/components/orders/order-items-form"
 import { PageHeader } from "@/components/shared/page-header"
+import { SubmitButton } from "@/components/shared/submit-button"
+import { ToastQuery } from "@/components/shared/toast-query"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -26,7 +28,9 @@ export default async function NewOrderPage() {
         [] as Array<{ id: string; name: string; unit: string; defaultPrice: string }>,
       ] as const,
   )
+
   const customers = customerPaged.items
+
 
   const customerOptions = customers.map((customer) => ({
     id: customer.id,
@@ -43,10 +47,11 @@ export default async function NewOrderPage() {
 
   return (
     <div>
+      <ToastQuery errorParam="error" errorMessageFallback="Gagal membuat nota" />
       <PageHeader title="Tambah Nota" description="Satu nota bisa memiliki beberapa item pesanan." />
       <Card className="max-w-2xl">
-        <form action={createOrderAction} className="space-y-4">
-          <CustomerSelect customers={customerOptions} />
+        <form action={createOrderAction} encType="multipart/form-data" className="space-y-4">
+          <CustomerSelect defaultCustomerId={customerOptions[0]?.id} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
@@ -62,11 +67,16 @@ export default async function NewOrderPage() {
           <OrderItemsForm serviceTypes={serviceTypeOptions} />
 
           <div className="space-y-2">
+            <Label htmlFor="image">Gambar Nota (opsional)</Label>
+            <Input id="image" name="image" type="file" accept="image/*" />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="note">Catatan</Label>
             <Textarea id="note" name="note" rows={3} />
           </div>
           <div className="flex gap-2">
-            <Button type="submit">Simpan</Button>
+            <SubmitButton label="Simpan" loadingLabel="Menyimpan..." />
             <Link href="/orders">
               <Button type="button" variant="outline">
                 Batal

@@ -85,6 +85,10 @@ export async function createCustomerAction(formData: FormData) {
   redirect(`/customers/${customer.id}`);
 }
 
+// ---------------------------------------------------------------------------
+// Update
+// ---------------------------------------------------------------------------
+
 export async function updateCustomerAction(
   customerId: string,
   formData: FormData,

@@ -1,9 +1,11 @@
 import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { NavigateButton } from "@/components/shared/navigate-button"
+import { ToastQuery } from "@/components/shared/toast-query"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Select } from "@/components/ui/select"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency } from "@/lib/format"
@@ -13,12 +15,17 @@ type OrdersPageProps = {
   searchParams?: {
     q?: string
     page?: string
+    created?: string
+    sort?: string
+    dir?: string
   }
 }
 
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const q = searchParams?.q?.trim()
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
+  const sort = (searchParams?.sort ?? "created_at").trim()
+  const dir = (searchParams?.dir ?? "desc").trim()
   const pageSize = 20
 
   const result = await backendFetch<{
@@ -33,7 +40,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       workflowStatus: string
     }>
     total: number
-  }>(`/api/v1/orders?q=${encodeURIComponent(q ?? "")}&page=${page}&pageSize=${pageSize}`).catch(
+  }>(
+    `/api/v1/orders?q=${encodeURIComponent(q ?? "")}&page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}&dir=${encodeURIComponent(dir)}`,
+  ).catch(
     () => ({
       items: [],
       total: 0,
@@ -45,6 +54,8 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const buildHref = (nextPage: number) => {
     const params = new URLSearchParams()
     if (q) params.set("q", q)
+    if (sort) params.set("sort", sort)
+    if (dir) params.set("dir", dir)
     params.set("page", String(nextPage))
     const query = params.toString()
     return query ? `/orders?${query}` : "/orders"
@@ -52,16 +63,33 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
   return (
     <div>
+      <ToastQuery successParam="created" successMessage="Nota berhasil dibuat" />
       <PageHeader title="Nota" actionHref="/orders/new" actionLabel="Tambah Nota" />
-      <form className="mb-4 flex max-w-md gap-2">
-        <Input
-          name="q"
-          defaultValue={q}
-          placeholder="Cari invoice / nama pelanggan..."
-        />
-        <Button type="submit" variant="secondary">
-          Cari
-        </Button>
+      <form className="mb-4 flex w-full gap-2 flex-between">
+        <div className="flex gap-2 w-full">
+          <Input
+            name="q"
+            defaultValue={q}
+            placeholder="Cari invoice / nama pelanggan..."
+          />
+          <Button type="submit" variant="secondary">
+            Cari
+          </Button>
+        </div>
+        <div className="flex gap-2 w-full">
+          <Select name="sort" defaultValue={sort}>
+            <option value="created_at">Terbaru</option>
+            <option value="received_date">Tanggal masuk</option>
+            <option value="total">Total</option>
+            <option value="customer_name">Nama pelanggan</option>
+            <option value="invoice_number">Invoice</option>
+          </Select>
+          <Select name="dir" defaultValue={dir}>
+            <option value="desc">Desc</option>
+            <option value="asc">Asc</option>
+          </Select>
+        </div>
+
       </form>
       <Card className="p-0">
         <div className="overflow-x-auto">
