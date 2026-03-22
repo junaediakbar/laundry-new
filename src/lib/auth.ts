@@ -1,16 +1,15 @@
-import { redirect } from "next/navigation"
+import 'server-only';
 
-import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+
+import { authCookieName, verifySession } from '@/lib/auth-session';
 
 export async function requireAuth() {
-  const supabase = createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
+  const token = cookies().get(authCookieName())?.value;
+  const session = verifySession(token);
+  if (!session) {
+    redirect('/login');
   }
-
-  return user
+  return session;
 }

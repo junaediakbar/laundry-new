@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { prisma } from '@/lib/prisma';
+import { backendFetch } from '@/lib/backend';
 import { serviceTypeSchema } from '@/lib/validations';
 
 export async function createServiceTypeAction(formData: FormData) {
@@ -18,14 +18,16 @@ export async function createServiceTypeAction(formData: FormData) {
     redirect('/service-types/new');
   }
 
-  await prisma.serviceType.create({
-    data: {
+  await backendFetch('/api/v1/service-types', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       name: parsed.data.name,
       unit: parsed.data.unit,
       defaultPrice: parsed.data.defaultPrice,
       isActive: parsed.data.isActive,
-    },
-  });
+    }),
+  }).catch(() => null);
 
   revalidatePath('/service-types');
   redirect('/service-types');
@@ -46,15 +48,16 @@ export async function updateServiceTypeAction(
     redirect(`/service-types/${serviceTypeId}/edit`);
   }
 
-  await prisma.serviceType.update({
-    where: { id: serviceTypeId },
-    data: {
+  await backendFetch(`/api/v1/service-types/${serviceTypeId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       name: parsed.data.name,
       unit: parsed.data.unit,
       defaultPrice: parsed.data.defaultPrice,
       isActive: parsed.data.isActive,
-    },
-  });
+    }),
+  }).catch(() => null);
 
   revalidatePath('/service-types');
   redirect('/service-types');

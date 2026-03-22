@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { notFound } from "next/navigation"
 
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
@@ -7,52 +6,52 @@ import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { buildGoogleMapsDirectionsUrl } from "@/lib/geo"
 import { formatDate } from "@/lib/format"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 type PlanDetail = {
   id: string
   name: string
-  plannedDate: Date
+  plannedDate: string
   startAddress: string | null
-  startLat: { toString(): string } | number | null
-  startLng: { toString(): string } | number | null
+  startLat: number | null
+  startLng: number | null
   stops: Array<{
     id: string
     sequence: number
-    distanceKm: { toString(): string } | number | null
+    distanceKm: number | null
     customer: {
       id: string
       name: string
       address: string | null
-      latitude: { toString(): string } | number | null
-      longitude: { toString(): string } | number | null
+      latitude: number | null
+      longitude: number | null
     }
   }>
 }
 
 export default async function DeliveryPlanDetailPage({ params }: { params: { id: string } }) {
-  const prismaDelivery = prisma as unknown as {
-    deliveryPlan: {
-      findUnique(args: unknown): Promise<PlanDetail | null>
-    }
+  let plan: PlanDetail | null = null
+  try {
+    plan = await backendFetch<PlanDetail>(`/api/v1/delivery-plans/${params.id}`)
+  } catch {
+    plan = null
   }
 
-  const plan = await prismaDelivery.deliveryPlan.findUnique({
-    where: { id: params.id },
-    include: {
-      stops: {
-        orderBy: { sequence: "asc" },
-        include: { customer: true },
-      },
-    },
-  })
-
   if (!plan) {
-    notFound()
+    return (
+      <div>
+        <PageHeader title="Rencana pengiriman tidak ditemukan" />
+        <Link href="/delivery-planning">
+          <Button variant="outline">Kembali</Button>
+        </Link>
+      </div>
+    )
   }
 
   const startLat = plan.startLat != null ? Number(plan.startLat) : -0.8986
   const startLng = plan.startLng != null ? Number(plan.startLng) : 119.8707
+  const startHref =
+    plan.startLat != null && plan.startLng != null ? `https://www.google.com/maps?q=${startLat},${startLng}` : null
 
   const stopLocations = plan.stops
     .map((s) => {
@@ -85,9 +84,13 @@ export default async function DeliveryPlanDetailPage({ params }: { params: { id:
           <div>
             <p className="text-sm text-muted-foreground">Titik Mulai</p>
             <p className="mt-1 text-sm font-medium">{plan.startAddress ?? "-"}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {startLat}, {startLng}
-            </p>
+            {startHref ? (
+              <a href={startHref} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs underline underline-offset-4">
+                Buka di Google Maps
+              </a>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">-</p>
+            )}
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Jumlah Stop</p>
@@ -148,4 +151,3 @@ export default async function DeliveryPlanDetailPage({ params }: { params: { id:
     </div>
   )
 }
-

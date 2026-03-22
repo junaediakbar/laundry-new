@@ -30,15 +30,9 @@ export default function NewCustomerPage() {
             <Label htmlFor="address">Alamat</Label>
             <Input id="address" name="address" />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="latitude">Latitude</Label>
-              <Input id="latitude" name="latitude" type="number" step="0.000001" placeholder="-0.9" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="longitude">Longitude</Label>
-              <Input id="longitude" name="longitude" type="number" step="0.000001" placeholder="119.87" />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="mapsLink">Google Maps Link (opsional)</Label>
+            <Input id="mapsLink" name="mapsLink" placeholder="https://www.google.com/maps?q=-6.2,106.8" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="notes">Catatan</Label>

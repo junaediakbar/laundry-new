@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { prisma } from '@/lib/prisma';
+import { backendFetch } from '@/lib/backend';
 
 type WorkTaskType =
   | 'pickup'
@@ -32,20 +32,6 @@ function parseTaskType(value: string): WorkTaskType | null {
 }
 
 export async function upsertWorkAssignmentAction(formData: FormData) {
-  const prismaWork = prisma as unknown as {
-    orderItem: {
-      findUnique(args: unknown): Promise<{
-        id: string;
-        orderId: string;
-        total: { toString(): string };
-      } | null>;
-    };
-    workAssignment: {
-      deleteMany(args: unknown): Promise<unknown>;
-      upsert(args: unknown): Promise<unknown>;
-    };
-  };
-
   const orderId = String(formData.get('orderId') ?? '');
   const orderItemId = String(formData.get('orderItemId') ?? '');
   const taskTypeRaw = String(formData.get('taskType') ?? '');
@@ -56,56 +42,14 @@ export async function upsertWorkAssignmentAction(formData: FormData) {
     return;
   }
 
-  const percentNumber = taskPercents[taskType];
-  if (percentNumber <= 0) {
-    return;
-  }
-
-  const orderItem = await prismaWork.orderItem.findUnique({
-    where: { id: orderItemId },
-    select: { id: true, orderId: true, total: true },
-  });
-
-  if (!orderItem || orderItem.orderId !== orderId) {
-    return;
-  }
-
-  if (!employeeId) {
-    await prismaWork.workAssignment.deleteMany({
-      where: {
-        orderItemId,
-        taskType,
-      },
-    });
-
-    revalidatePath(`/orders/${orderId}`);
-    return;
-  }
-
-  const total = Number(orderItem.total.toString());
-  const amountNumber = Math.max((total * percentNumber) / 100, 0);
-
-  await prismaWork.workAssignment.upsert({
-    where: {
-      orderItemId_taskType: {
-        orderItemId,
-        taskType,
-      },
+  await backendFetch(
+    `/api/v1/orders/${orderId}/items/${orderItemId}/work-assignments/${taskType}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employeeId }),
     },
-    create: {
-      orderId,
-      orderItemId,
-      employeeId,
-      taskType,
-      percent: percentNumber.toFixed(2),
-      amount: amountNumber.toFixed(2),
-    },
-    update: {
-      employeeId,
-      percent: percentNumber.toFixed(2),
-      amount: amountNumber.toFixed(2),
-    },
-  });
+  ).catch(() => null);
 
   revalidatePath(`/orders/${orderId}`);
 }

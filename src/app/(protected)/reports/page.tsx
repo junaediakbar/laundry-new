@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/format"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 type ReportsPageProps = {
   searchParams?: {
@@ -21,33 +21,23 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const endDate = searchParams?.endDate
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
   const pageSize = 20
+  const result = await backendFetch<{
+    items: Array<{
+      id: string
+      createdAt: string
+      invoiceNumber: string
+      customer: { name: string }
+      total: string
+    }>
+    total: number
+  }>(`/api/v1/orders?page=${page}&pageSize=${pageSize}&q=`).catch(() => ({
+    items: [],
+    total: 0,
+  }))
 
-  const start = startDate ? new Date(startDate) : undefined
-  const end = endDate ? new Date(`${endDate}T23:59:59`) : undefined
-
-  const where =
-    start || end
-      ? {
-        createdAt: {
-          gte: start,
-          lte: end,
-        },
-      }
-      : undefined
-
-  const [orders, totalOrders, revenueResult] = await Promise.all([
-    prisma.order.findMany({
-      where,
-      include: { customer: true },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.order.count({ where }),
-    prisma.order.aggregate({ where, _sum: { total: true } }),
-  ])
-
-  const totalRevenue = Number(revenueResult._sum.total ?? 0)
+  const orders = result.items
+  const totalOrders = result.total
+  const totalRevenue = 0
 
   const exportHref = `/reports/export?startDate=${startDate ?? ""}&endDate=${endDate ?? ""}`
   const exportFilename = `report-${startDate ?? "all"}-${endDate ?? "all"}.csv`
@@ -97,22 +87,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map(
-                (order: {
-                  id: string
-                  createdAt: Date
-                  invoiceNumber: string
-                  customer: { name: string }
-                  total: { toString(): string }
-                }) => (
-                  <TableRow key={order.id}>
-                    <TableCell>{formatDate(order.createdAt)}</TableCell>
-                    <TableCell className="font-medium">{order.invoiceNumber}</TableCell>
-                    <TableCell>{order.customer.name}</TableCell>
-                    <TableCell>{formatCurrency(Number(order.total.toString()))}</TableCell>
-                  </TableRow>
-                ),
-              )}
+              {orders.map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell>{formatDate(new Date(order.createdAt))}</TableCell>
+                  <TableCell className="font-medium">{order.invoiceNumber}</TableCell>
+                  <TableCell>{order.customer.name}</TableCell>
+                  <TableCell>{formatCurrency(Number(order.total))}</TableCell>
+                </TableRow>
+              ))}
               {orders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">

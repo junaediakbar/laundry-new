@@ -12,20 +12,22 @@ type EmployeeOption = {
   name: string
 }
 
+type Decimalish = string | number | { toString(): string }
+
 type WorkAssignmentRow = {
   id: string
   orderItemId: string
   taskType: string
   employee: EmployeeOption
-  percent: { toString(): string }
-  amount: { toString(): string }
+  percent: Decimalish
+  amount: Decimalish
 }
 
 type OrderItemRow = {
   id: string
-  total: { toString(): string }
+  total: Decimalish
   serviceType: { name: string; unit: string }
-  quantity: { toString(): string }
+  quantity: Decimalish
   workAssignments: WorkAssignmentRow[]
 }
 

@@ -1,68 +1,34 @@
 import { NextResponse } from 'next/server';
-
-import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const startDate = searchParams.get('startDate');
   const endDate = searchParams.get('endDate');
 
-  const start = startDate ? new Date(startDate) : undefined;
-  const end = endDate ? new Date(`${endDate}T23:59:59`) : undefined;
+  const base = (
+    process.env.BACKEND_BASE_URL || 'http://localhost:8080'
+  ).replace(/\/$/, '');
+  const qs = new URLSearchParams();
+  if (startDate) qs.set('startDate', startDate);
+  if (endDate) qs.set('endDate', endDate);
+  const url = `${base}/api/v1/reports/orders.csv${qs.toString() ? `?${qs}` : ''}`;
+  const token = cookies().get('backend_token')?.value;
 
-  const orders = await prisma.order.findMany({
-    where:
-      start || end
-        ? {
-            createdAt: {
-              gte: start,
-              lte: end,
-            },
-          }
-        : undefined,
-    include: { customer: true, items: { include: { serviceType: true } } },
-    orderBy: { createdAt: 'desc' },
+  const res = await fetch(url, {
+    headers: {
+      Accept: 'text/csv',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: 'no-store',
   });
 
-  const csvHeader =
-    'invoice_number,tanggal,pelanggan,items,total,payment_status,workflow_status\n';
-  const csvRows = orders
-    .map(
-      (order: {
-        invoiceNumber: string;
-        createdAt: Date;
-        customer: { name: string };
-        items: Array<{
-          quantity: { toString(): string };
-          serviceType: { name: string; unit: string };
-          total: { toString(): string };
-        }>;
-        total: { toString(): string };
-        paymentStatus: string;
-        workflowStatus: string;
-      }) => {
-        const itemsText = order.items
-          .map((item) => {
-            const qty = Number(item.quantity.toString());
-            const subTotal = Number(item.total.toString());
-            return `${qty} ${item.serviceType.unit} ${item.serviceType.name} (${subTotal})`;
-          })
-          .join('; ');
+  const body = await res.arrayBuffer();
+  if (!res.ok) {
+    return new NextResponse(body, { status: res.status });
+  }
 
-        return [
-          order.invoiceNumber,
-          new Date(order.createdAt).toISOString(),
-          `"${order.customer.name}"`,
-          `"${itemsText.replaceAll('"', '""')}"`,
-          Number(order.total.toString()),
-          order.paymentStatus,
-          order.workflowStatus,
-        ].join(',');
-      },
-    )
-    .join('\n');
-
-  return new NextResponse(csvHeader + csvRows, {
+  return new NextResponse(body, {
     status: 200,
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',

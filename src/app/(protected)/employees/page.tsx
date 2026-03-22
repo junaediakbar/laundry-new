@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 type EmployeesPageProps = {
   searchParams?: {
@@ -20,29 +20,14 @@ export default async function EmployeesPage({ searchParams }: EmployeesPageProps
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
   const pageSize = 20
 
-  const where = q
-    ? {
-      name: { contains: q, mode: "insensitive" as const },
-    }
-    : undefined
-
-  const prismaEmployee = prisma as unknown as {
-    employee: {
-      findMany(args: unknown): Promise<Array<{ id: string; name: string; isActive: boolean }>>
-      count(args: unknown): Promise<number>
-    }
-  }
-
-  const [employees, totalEmployees] = await Promise.all([
-    prismaEmployee.employee.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-      select: { id: true, name: true, isActive: true },
-    }),
-    prismaEmployee.employee.count({ where }),
-  ])
+  const all = await backendFetch<Array<{ id: string; name: string; isActive: boolean }>>(
+    `/api/v1/employees`,
+  ).catch(() => [])
+  const filtered = q
+    ? all.filter((e) => e.name.toLowerCase().includes(q.toLowerCase()))
+    : all
+  const totalEmployees = filtered.length
+  const employees = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const buildHref = (nextPage: number) => {
     const params = new URLSearchParams()

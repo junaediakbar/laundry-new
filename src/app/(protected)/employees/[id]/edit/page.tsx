@@ -7,19 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 export default async function EditEmployeePage({ params }: { params: { id: string } }) {
-  const prismaEmployee = prisma as unknown as {
-    employee: {
-      findUnique(args: unknown): Promise<{ id: string; name: string; isActive: boolean } | null>
-    }
-  }
-
-  const employee = await prismaEmployee.employee.findUnique({
-    where: { id: params.id },
-    select: { id: true, name: true, isActive: true },
-  })
+  const employee = await backendFetch<{ id: string; name: string; isActive: boolean }>(
+    `/api/v1/employees/${params.id}`,
+  ).catch(() => null)
 
   if (!employee) {
     notFound()

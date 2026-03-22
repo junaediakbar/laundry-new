@@ -9,13 +9,24 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 export default async function NewOrderPage() {
-  const [customers, serviceTypes] = await Promise.all([
-    prisma.customer.findMany({ orderBy: { name: "asc" } }),
-    prisma.serviceType.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
-  ])
+  const [customerPaged, serviceTypes] = await Promise.all([
+    backendFetch<{
+      items: Array<{ id: string; name: string; phone: string | null }>
+    }>(`/api/v1/customers?page=1&pageSize=200&q=`),
+    backendFetch<Array<{ id: string; name: string; unit: string; defaultPrice: string }>>(
+      `/api/v1/service-types?active=true`,
+    ),
+  ]).catch(
+    () =>
+      [
+        { items: [] as Array<{ id: string; name: string; phone: string | null }> },
+        [] as Array<{ id: string; name: string; unit: string; defaultPrice: string }>,
+      ] as const,
+  )
+  const customers = customerPaged.items
 
   const customerOptions = customers.map((customer) => ({
     id: customer.id,

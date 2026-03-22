@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency } from "@/lib/format"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 type OrdersPageProps = {
   searchParams?: {
@@ -21,34 +21,26 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
   const pageSize = 20
 
-  const where = q
-    ? {
-      OR: [
-        { invoiceNumber: { contains: q, mode: "insensitive" as const } },
-        { customer: { name: { contains: q, mode: "insensitive" as const } } },
-      ],
-    }
-    : undefined
-
-  const [orders, totalOrders] = await Promise.all([
-    prisma.order.findMany({
-      where,
-      include: {
-        customer: true,
-        items: {
-          take: 1,
-          include: { serviceType: true },
-        },
-        _count: {
-          select: { items: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+  const result = await backendFetch<{
+    items: Array<{
+      id: string
+      invoiceNumber: string
+      customer: { id: string; name: string }
+      firstItem?: { serviceType: { id: string; name: string } } | null
+      itemCount: number
+      total: string
+      paymentStatus: string
+      workflowStatus: string
+    }>
+    total: number
+  }>(`/api/v1/orders?q=${encodeURIComponent(q ?? "")}&page=${page}&pageSize=${pageSize}`).catch(
+    () => ({
+      items: [],
+      total: 0,
     }),
-    prisma.order.count({ where }),
-  ])
+  )
+  const orders = result.items
+  const totalOrders = result.total
 
   const buildHref = (nextPage: number) => {
     const params = new URLSearchParams()
@@ -93,9 +85,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <p className="text-sm font-medium">
-                        {order.items[0]?.serviceType.name ?? "-"}
+                        {order.firstItem?.serviceType.name ?? "-"}
                       </p>
-                      <p className="text-xs text-muted-foreground">{order._count.items} item</p>
+                      <p className="text-xs text-muted-foreground">{order.itemCount} item</p>
                     </div>
                   </TableCell>
                   <TableCell>{formatCurrency(Number(order.total))}</TableCell>

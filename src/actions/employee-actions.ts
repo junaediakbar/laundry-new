@@ -3,17 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { prisma } from '@/lib/prisma';
+import { backendFetch } from '@/lib/backend';
 import { employeeSchema } from '@/lib/validations';
 
 export async function createEmployeeAction(formData: FormData) {
-  const prismaEmployee = prisma as unknown as {
-    employee: {
-      create(args: unknown): Promise<unknown>;
-      update(args: unknown): Promise<unknown>;
-    };
-  };
-
   const parsed = employeeSchema.safeParse({
     name: formData.get('name'),
     isActive: formData.get('isActive'),
@@ -23,24 +16,20 @@ export async function createEmployeeAction(formData: FormData) {
     redirect('/employees/new');
   }
 
-  await prismaEmployee.employee.create({
-    data: {
+  await backendFetch('/api/v1/employees', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       name: parsed.data.name,
       isActive: parsed.data.isActive,
-    },
-  });
+    }),
+  }).catch(() => null);
 
   revalidatePath('/employees');
   redirect('/employees');
 }
 
 export async function updateEmployeeAction(employeeId: string, formData: FormData) {
-  const prismaEmployee = prisma as unknown as {
-    employee: {
-      update(args: unknown): Promise<unknown>;
-    };
-  };
-
   const parsed = employeeSchema.safeParse({
     name: formData.get('name'),
     isActive: formData.get('isActive'),
@@ -50,13 +39,14 @@ export async function updateEmployeeAction(employeeId: string, formData: FormDat
     redirect(`/employees/${employeeId}/edit`);
   }
 
-  await prismaEmployee.employee.update({
-    where: { id: employeeId },
-    data: {
+  await backendFetch(`/api/v1/employees/${employeeId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
       name: parsed.data.name,
       isActive: parsed.data.isActive,
-    },
-  });
+    }),
+  }).catch(() => null);
 
   revalidatePath('/employees');
   redirect('/employees');

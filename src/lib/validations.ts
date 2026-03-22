@@ -13,15 +13,8 @@ export const customerSchema = z.object({
     .optional()
     .or(z.literal('')),
   address: z.string().optional(),
-  latitude: z
-    .union([z.coerce.number(), z.literal('')])
-    .optional()
-    .transform((v) => (v === '' || v == null ? undefined : Number(v))),
-  longitude: z
-    .union([z.coerce.number(), z.literal('')])
-    .optional()
-    .transform((v) => (v === '' || v == null ? undefined : Number(v))),
-  email: z.string().email('Email tidak valid').optional().or(z.literal('')),
+  mapsLink: z.string().optional().or(z.literal('')),
+  email: z.string().optional().or(z.literal('')),
   notes: z.string().optional(),
 });
 
@@ -37,6 +30,17 @@ export const serviceTypeSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
   unit: z.string().min(1, 'Satuan wajib diisi'),
   defaultPrice: z.coerce.number().nonnegative('Harga tidak boleh negatif'),
+  isActive: z
+    .union([z.literal('on'), z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((value) => value === 'on' || value === 'true'),
+});
+
+export const userSchema = z.object({
+  name: z.string().min(2, 'Nama minimal 2 karakter'),
+  email: z.string().email('Email tidak valid'),
+  role: z.union([z.literal('owner'), z.literal('admin'), z.literal('cashier')]),
+  password: z.string().optional().or(z.literal('')),
   isActive: z
     .union([z.literal('on'), z.literal('true'), z.literal('false')])
     .optional()

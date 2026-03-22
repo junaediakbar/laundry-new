@@ -8,14 +8,18 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 const unitOptions = ["m2", "m1", "kg", "item"]
 
 export default async function EditServiceTypePage({ params }: { params: { id: string } }) {
-  const serviceType = await prisma.serviceType.findUnique({
-    where: { id: params.id },
-  })
+  const serviceType = await backendFetch<{
+    id: string
+    name: string
+    unit: string
+    defaultPrice: string
+    isActive: boolean
+  }>(`/api/v1/service-types/${params.id}`).catch(() => null)
 
   if (!serviceType) {
     notFound()

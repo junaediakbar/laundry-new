@@ -3,17 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { prisma } from '@/lib/prisma';
+import { backendFetch } from '@/lib/backend';
 import { haversineDistanceKm, nearestNeighborOrder } from '@/lib/geo';
-
-type DeliveryTx = {
-  deliveryPlan: {
-    create(args: unknown): Promise<{ id: string }>;
-  };
-  deliveryStop: {
-    createMany(args: unknown): Promise<unknown>;
-  };
-};
 
 function parseJsonArray(value: unknown) {
   if (typeof value !== 'string' || value.length === 0) return [];
@@ -60,41 +51,20 @@ export async function createDeliveryPlanAction(formData: FormData) {
     redirect('/delivery-planning/new?error=Input%20tidak%20valid');
   }
 
-  const prismaDelivery = prisma as unknown as {
-    customer: {
-      findMany(args: unknown): Promise<
-        Array<{
-          id: string;
-          name: string;
-          address: string | null;
-          latitude: { toString(): string } | number | null;
-          longitude: { toString(): string } | number | null;
-        }>
-      >;
-    };
-    deliveryPlan: {
-      create(args: unknown): Promise<{ id: string }>;
-    };
-    deliveryStop: {
-      createMany(args: unknown): Promise<unknown>;
-    };
-    $transaction<T>(cb: (tx: DeliveryTx) => Promise<T>): Promise<T>;
-  };
+  const customersPaged = await backendFetch<{
+    items: Array<{
+      id: string;
+      name: string;
+      address: string | null;
+      latitude: number | null;
+      longitude: number | null;
+    }>;
+  }>(`/api/v1/customers?page=1&pageSize=500&q=`).catch(() => ({ items: [] }));
 
-  const customers = await prismaDelivery.customer.findMany({
-    where: {
-      id: { in: customerIds },
-      latitude: { not: null },
-      longitude: { not: null },
-    },
-    select: {
-      id: true,
-      name: true,
-      address: true,
-      latitude: true,
-      longitude: true,
-    },
-  });
+  const customerSet = new Set(customerIds);
+  const customers = customersPaged.items
+    .filter((c) => customerSet.has(c.id))
+    .filter((c) => c.latitude != null && c.longitude != null);
 
   if (customers.length === 0) {
     redirect(
@@ -116,36 +86,33 @@ export async function createDeliveryPlanAction(formData: FormData) {
     const prev = index === 0 ? start : ordered[index - 1].location;
     const distanceKm = haversineDistanceKm(prev, p.location);
     return {
-      customer_id: p.customerId,
+      customerId: p.customerId,
       sequence: index + 1,
-      distance_km: distanceKm.toFixed(2),
+      distanceKm,
     };
   });
 
-  const planId = await prismaDelivery.$transaction(async (tx) => {
-    const created = await tx.deliveryPlan.create({
-      data: {
-        name,
-        plannedDate,
-        startAddress,
-        startLat: startLat.toFixed(6),
-        startLng: startLng.toFixed(6),
-      },
-      select: { id: true },
-    });
-
-    await tx.deliveryStop.createMany({
-      data: stops.map((s) => ({
-        planId: created.id,
-        customerId: s.customer_id,
+  const created = await backendFetch<{ id: string }>(`/api/v1/delivery-plans`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name,
+      plannedDate: plannedDate.toISOString().slice(0, 10),
+      startAddress,
+      startLat,
+      startLng,
+      stops: stops.map((s) => ({
+        customerId: s.customerId,
         sequence: s.sequence,
-        distanceKm: s.distance_km,
+        distanceKm: Number.isFinite(s.distanceKm) ? s.distanceKm : 0,
       })),
-    });
+    }),
+  }).catch(() => null);
 
-    return created.id as string;
-  });
+  if (!created?.id) {
+    redirect('/delivery-planning/new?error=Gagal%20membuat%20rencana');
+  }
 
   revalidatePath('/delivery-planning');
-  redirect(`/delivery-planning/${planId}`);
+  redirect(`/delivery-planning/${created.id}`);
 }

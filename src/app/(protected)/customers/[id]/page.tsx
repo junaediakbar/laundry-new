@@ -6,34 +6,27 @@ import { PageHeader } from "@/components/shared/page-header"
 import { NavigateButton } from "@/components/shared/navigate-button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { prisma } from "@/lib/prisma"
-
-type CustomerDetailRow = {
-  id: string
-  name: string
-  phone: string | null
-  email: string | null
-  address: string | null
-  notes: string | null
-  latitude: { toString(): string } | number | null
-  longitude: { toString(): string } | number | null
-  orders: Array<{ id: string; invoiceNumber: string; total: { toString(): string } | number; workflowStatus: string }>
-}
+import { backendFetch } from "@/lib/backend"
 
 export default async function CustomerDetailPage({ params }: { params: { id: string } }) {
-  const customer = (await prisma.customer.findUnique({
-    where: { id: params.id },
-    include: {
-      orders: {
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      },
-    },
-  })) as unknown as CustomerDetailRow | null
+  const [customer, orders] = await Promise.all([
+    backendFetch<{
+      id: string
+      name: string
+      phone: string | null
+      email: string | null
+      address: string | null
+      notes: string | null
+      latitude: number | null
+      longitude: number | null
+    }>(`/api/v1/customers/${params.id}`),
+    backendFetch<
+      Array<{ id: string; invoiceNumber: string; total: string; workflowStatus: string }>
+    >(`/api/v1/customers/${params.id}/orders?limit=10`),
+  ]).catch(() => [null, []] as const)
 
-  if (!customer) {
-    notFound()
-  }
+  if (!customer) notFound()
+  const safeOrders = orders ?? []
 
   const lat = customer.latitude != null ? Number(customer.latitude) : null
   const lng = customer.longitude != null ? Number(customer.longitude) : null
@@ -63,13 +56,14 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
               <p className="text-sm font-medium">{customer.address ?? "-"}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-sm text-muted-foreground">Koordinat</p>
-              <p className="text-sm font-medium">{lat != null && lng != null ? `${lat}, ${lng}` : "-"}</p>
+              <p className="text-sm text-muted-foreground">Lokasi</p>
               {mapsHref ? (
-                <a href={mapsHref} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground underline underline-offset-4">
+                <a href={mapsHref} target="_blank" rel="noreferrer" className="text-sm font-medium underline underline-offset-4">
                   Buka di Google Maps
                 </a>
-              ) : null}
+              ) : (
+                <p className="text-sm font-medium">-</p>
+              )}
             </div>
             <div className="space-y-1 sm:col-span-2">
               <p className="text-sm text-muted-foreground">Catatan</p>
@@ -79,7 +73,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
         </Card>
         <Card>
           <p className="text-sm text-muted-foreground">Total Nota (terakhir 10)</p>
-          <p className="mt-2 text-3xl font-semibold">{customer.orders.length}</p>
+          <p className="mt-2 text-3xl font-semibold">{safeOrders.length}</p>
         </Card>
       </div>
 
@@ -94,7 +88,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customer.orders.map((order) => (
+              {safeOrders.map((order) => (
                 <TableRow key={order.id}>
                   <TableCell className="font-medium">
                     <NavigateButton href={`/orders/${order.id}`} label={order.invoiceNumber} variant="secondary" />
@@ -103,7 +97,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
                   <TableCell className="capitalize">{order.workflowStatus.replace("_", " ")}</TableCell>
                 </TableRow>
               ))}
-              {customer.orders.length === 0 ? (
+              {safeOrders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} className="py-10 text-center text-muted-foreground">
                     Belum ada histori pesanan.

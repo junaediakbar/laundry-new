@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/shared/status-badge"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/format"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 const workflowOptions = ["received", "washing", "drying", "ironing", "finished", "picked_up"]
 
@@ -20,25 +20,25 @@ type WorkAssignmentRow = {
   orderItemId: string
   taskType: string
   employee: EmployeeOption
-  percent: { toString(): string }
-  amount: { toString(): string }
+  percent: string
+  amount: string
 }
 
 type OrderItemRow = {
   id: string
-  quantity: { toString(): string }
-  unitPrice: { toString(): string }
-  discount: { toString(): string }
-  total: { toString(): string }
+  quantity: string
+  unitPrice: string
+  discount: string
+  total: string
   serviceType: { name: string; unit: string }
   workAssignments: WorkAssignmentRow[]
 }
 
 type PaymentRow = {
   id: string
-  paidAt: Date
+  paidAt: string
   method: string
-  amount: { toString(): string }
+  amount: string
   note: string | null
 }
 
@@ -46,48 +46,22 @@ type OrderDetail = {
   id: string
   invoiceNumber: string
   customer: { name: string }
-  total: { toString(): string }
+  total: string
   paymentStatus: string
   workflowStatus: string
-  receivedDate: Date
-  completedDate: Date | null
-  pickupDate: Date | null
+  receivedDate: string
+  completedDate: string | null
+  pickupDate: string | null
   items: OrderItemRow[]
   payments: PaymentRow[]
-  attachments: Array<{ id: string; filePath: string; createdAt: Date }>
+  attachments: Array<{ id: string; filePath: string; createdAt: string }>
 }
 
 export default async function OrderDetailPage({ params }: { params: { id: string } }) {
-  const prismaOrder = prisma as unknown as {
-    order: {
-      findUnique(args: unknown): Promise<OrderDetail | null>
-    }
-    employee: {
-      findMany(args: unknown): Promise<EmployeeOption[]>
-    }
-  }
-
   const [order, employees] = await Promise.all([
-    prismaOrder.order.findUnique({
-      where: { id: params.id },
-      include: {
-        customer: true,
-        items: {
-          include: { serviceType: true, workAssignments: { include: { employee: true } } },
-          orderBy: { createdAt: "asc" },
-        },
-        attachments: { orderBy: { createdAt: "desc" } },
-        payments: {
-          orderBy: { paidAt: "desc" },
-        },
-      },
-    }),
-    prismaOrder.employee.findMany({
-      where: { isActive: true },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true },
-    }),
-  ])
+    backendFetch<OrderDetail>(`/api/v1/orders/${params.id}`),
+    backendFetch<EmployeeOption[]>(`/api/v1/employees?active=true`),
+  ]).catch(() => [null, []] as const)
 
   if (!order) {
     notFound()
@@ -95,7 +69,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
 
   const orderId = order.id
   const paidAmount = order.payments.reduce(
-    (sum: number, payment: { amount: { toString(): string } }) => sum + Number(payment.amount.toString()),
+    (sum: number, payment: { amount: string }) => sum + Number(payment.amount),
     0,
   )
   const remaining = Number(order.total) - paidAmount
@@ -206,7 +180,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
 
       <OrderAttachments
         orderId={orderId}
-        attachments={order.attachments.map((a) => ({ id: a.id, filePath: a.filePath, createdAt: a.createdAt.toISOString() }))}
+        attachments={order.attachments.map((a) => ({ id: a.id, filePath: a.filePath, createdAt: a.createdAt }))}
       />
 
       <OrderDetailForms
@@ -229,22 +203,14 @@ export default async function OrderDetailPage({ params }: { params: { id: string
               </TableRow>
             </TableHeader>
             <TableBody>
-              {order.payments.map(
-                (payment: {
-                  id: string
-                  paidAt: Date
-                  method: string
-                  amount: { toString(): string }
-                  note: string | null
-                }) => (
-                  <TableRow key={payment.id}>
-                    <TableCell>{formatDate(payment.paidAt)}</TableCell>
-                    <TableCell className="capitalize">{payment.method}</TableCell>
-                    <TableCell>{formatCurrency(Number(payment.amount))}</TableCell>
-                    <TableCell>{payment.note ?? "-"}</TableCell>
-                  </TableRow>
-                ),
-              )}
+              {order.payments.map((payment) => (
+                <TableRow key={payment.id}>
+                  <TableCell>{formatDate(payment.paidAt)}</TableCell>
+                  <TableCell className="capitalize">{payment.method}</TableCell>
+                  <TableCell>{formatCurrency(Number(payment.amount))}</TableCell>
+                  <TableCell>{payment.note ?? "-"}</TableCell>
+                </TableRow>
+              ))}
               {order.payments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">

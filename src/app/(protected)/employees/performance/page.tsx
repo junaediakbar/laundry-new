@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency } from "@/lib/format"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 type EmployeePerformancePageProps = {
   searchParams?: {
@@ -13,73 +13,35 @@ type EmployeePerformancePageProps = {
   }
 }
 
-const pickupTaskTypes = new Set(["pickup", "dropoff", "fuel_vehicle", "driver"])
-const workTaskTypes = new Set([
-  "dust_removal",
-  "brushing",
-  "rinse_sprayer",
-  "spin_dry",
-  "finishing_packing",
-])
+type Row = {
+  employeeId: string
+  employeeName: string
+  pickupAmount: string
+  workAmount: string
+  totalAmount: string
+}
 
 export default async function EmployeePerformancePage({ searchParams }: EmployeePerformancePageProps) {
   const startDate = searchParams?.startDate
   const endDate = searchParams?.endDate
 
-  const start = startDate ? new Date(startDate) : undefined
-  const end = endDate ? new Date(`${endDate}T23:59:59`) : undefined
+  const qs = new URLSearchParams()
+  if (startDate) qs.set("startDate", startDate)
+  if (endDate) qs.set("endDate", endDate)
+  const query = qs.toString()
 
-  const prismaWork = prisma as unknown as {
-    workAssignment: {
-      findMany(args: unknown): Promise<
-        Array<{
-          taskType: string
-          amount: { toString(): string }
-          employee: { id: string; name: string }
-        }>
-      >
-    }
-  }
+  const rows = await backendFetch<Row[]>(
+    `/api/v1/employees/performance${query ? `?${query}` : ""}`,
+  ).catch(() => [])
 
-  const assignments = await prismaWork.workAssignment.findMany({
-    where:
-      start || end
-        ? {
-            order: {
-              createdAt: {
-                gte: start,
-                lte: end,
-              },
-            },
-          }
-        : undefined,
-    include: { employee: true, order: { select: { createdAt: true } } },
-    orderBy: { createdAt: "desc" },
-  })
-
-  const rows = new Map<
-    string,
-    { employeeName: string; pickupAmount: number; workAmount: number; totalAmount: number }
-  >()
-
-  for (const item of assignments) {
-    const amount = Number(item.amount.toString())
-    const current =
-      rows.get(item.employee.id) ??
-      { employeeName: item.employee.name, pickupAmount: 0, workAmount: 0, totalAmount: 0 }
-
-    if (pickupTaskTypes.has(item.taskType)) {
-      current.pickupAmount += amount
-    }
-    if (workTaskTypes.has(item.taskType)) {
-      current.workAmount += amount
-    }
-    current.totalAmount += amount
-    rows.set(item.employee.id, current)
-  }
-
-  const sorted = Array.from(rows.entries())
-    .map(([employeeId, value]) => ({ employeeId, ...value }))
+  const sorted = rows
+    .map((r) => ({
+      employeeId: r.employeeId,
+      employeeName: r.employeeName,
+      pickupAmount: Number(r.pickupAmount),
+      workAmount: Number(r.workAmount),
+      totalAmount: Number(r.totalAmount),
+    }))
     .sort((a, b) => b.totalAmount - a.totalAmount)
 
   const totalPickup = sorted.reduce((sum, r) => sum + r.pickupAmount, 0)

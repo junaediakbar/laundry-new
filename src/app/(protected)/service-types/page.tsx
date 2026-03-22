@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency } from "@/lib/format"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 type ServiceTypesPageProps = {
   searchParams?: {
@@ -21,21 +21,22 @@ export default async function ServiceTypesPage({ searchParams }: ServiceTypesPag
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
   const pageSize = 20
 
-  const where = q
-    ? {
-        name: { contains: q, mode: "insensitive" as const },
-      }
-    : undefined
+  const all = await backendFetch<
+    Array<{
+      id: string
+      name: string
+      unit: string
+      defaultPrice: string
+      isActive: boolean
+    }>
+  >(`/api/v1/service-types`).catch(() => [])
 
-  const [serviceTypes, totalItems] = await Promise.all([
-    prisma.serviceType.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.serviceType.count({ where }),
-  ])
+  const filtered = q
+    ? all.filter((s) => s.name.toLowerCase().includes(q.toLowerCase()))
+    : all
+
+  const totalItems = filtered.length
+  const serviceTypes = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const buildHref = (nextPage: number) => {
     const params = new URLSearchParams()

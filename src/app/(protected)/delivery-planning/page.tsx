@@ -5,29 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDate } from "@/lib/format"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 type DeliveryPlanRow = {
   id: string
   name: string
-  plannedDate: Date
-  _count: { stops: number }
+  plannedDate: string
+  stopCount: number
 }
 
 export default async function DeliveryPlanningPage() {
-  const prismaDelivery = prisma as unknown as {
-    deliveryPlan: {
-      findMany(args: unknown): Promise<DeliveryPlanRow[]>
-    }
-  }
-
-  const plans = await prismaDelivery.deliveryPlan.findMany({
-    orderBy: { plannedDate: "desc" },
-    take: 50,
-    include: {
-      _count: { select: { stops: true } },
-    },
-  })
+  const plans =
+    (await backendFetch<DeliveryPlanRow[]>(`/api/v1/delivery-plans?limit=50`).catch(() => [])) ?? []
 
   return (
     <div>
@@ -49,7 +38,7 @@ export default async function DeliveryPlanningPage() {
                 <TableRow key={plan.id}>
                   <TableCell className="font-medium">{plan.name}</TableCell>
                   <TableCell>{formatDate(plan.plannedDate)}</TableCell>
-                  <TableCell>{plan._count.stops}</TableCell>
+                  <TableCell>{plan.stopCount}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     <Link href={`/delivery-planning/${plan.id}`}>
                       <Button size="sm" variant="outline">
@@ -74,4 +63,3 @@ export default async function DeliveryPlanningPage() {
     </div>
   )
 }
-

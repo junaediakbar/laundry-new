@@ -1,16 +1,10 @@
 import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 
-import { createSupabaseServerClient } from "@/lib/supabase-server"
+import { authCookieName, verifySession } from "@/lib/auth-session"
 
 export default async function HomePage() {
-  const supabase = createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect("/login")
-  }
-
-  redirect("/dashboard")
+  const token = cookies().get(authCookieName())?.value
+  const session = verifySession(token)
+  redirect(session ? "/dashboard" : "/login")
 }

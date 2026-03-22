@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 type CustomersPageProps = {
   searchParams?: {
@@ -20,24 +20,21 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
   const pageSize = 20
 
-  const where = q
-    ? {
-        OR: [
-          { name: { contains: q, mode: "insensitive" as const } },
-          { phone: { contains: q, mode: "insensitive" as const } },
-        ],
-      }
-    : undefined
-
-  const [customers, totalCustomers] = await Promise.all([
-    prisma.customer.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+  const result = await backendFetch<{
+    items: Array<{ id: string; name: string; phone: string | null; email: string | null }>
+    page: number
+    pageSize: number
+    total: number
+  }>(`/api/v1/customers?q=${encodeURIComponent(q ?? "")}&page=${page}&pageSize=${pageSize}`).catch(
+    () => ({
+      items: [],
+      page,
+      pageSize,
+      total: 0,
     }),
-    prisma.customer.count({ where }),
-  ])
+  )
+  const customers = result.items
+  const totalCustomers = result.total
 
   const buildHref = (nextPage: number) => {
     const params = new URLSearchParams()

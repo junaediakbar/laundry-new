@@ -1,6 +1,6 @@
 import { PageHeader } from "@/components/shared/page-header"
 import { PlanBuilder } from "@/components/delivery-planning/plan-builder"
-import { prisma } from "@/lib/prisma"
+import { backendFetch } from "@/lib/backend"
 
 export default async function NewDeliveryPlanPage({
   searchParams,
@@ -9,33 +9,25 @@ export default async function NewDeliveryPlanPage({
 }) {
   const error = searchParams?.error
 
-  const prismaCustomer = prisma as unknown as {
-    customer: {
-      findMany(args: unknown): Promise<
-        Array<{
-          id: string
-          name: string
-          address: string | null
-          latitude: { toString(): string } | number | null
-          longitude: { toString(): string } | number | null
-        }>
-      >
-    }
-  }
+  const customers = await backendFetch<{
+    items: Array<{
+      id: string
+      name: string
+      address: string | null
+      latitude: number | null
+      longitude: number | null
+    }>
+  }>(`/api/v1/customers?page=1&pageSize=500&q=`).catch(() => ({ items: [] }))
 
-  const customers = await prismaCustomer.customer.findMany({
-    where: { latitude: { not: null }, longitude: { not: null } },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, address: true, latitude: true, longitude: true },
-  })
-
-  const options = customers.map((c) => ({
-    id: c.id,
-    name: c.name,
-    address: c.address,
-    latitude: Number(c.latitude),
-    longitude: Number(c.longitude),
-  }))
+  const options = customers.items
+    .filter((c) => c.latitude != null && c.longitude != null)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      address: c.address,
+      latitude: Number(c.latitude),
+      longitude: Number(c.longitude),
+    }))
 
   return (
     <div>

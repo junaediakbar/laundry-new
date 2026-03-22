@@ -8,29 +8,27 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { prisma } from "@/lib/prisma"
-
-type CustomerRow = {
-  id: string
-  name: string
-  phone: string | null
-  email: string | null
-  address: string | null
-  notes: string | null
-  latitude: { toString(): string } | number | null
-  longitude: { toString(): string } | number | null
-}
+import { backendFetch } from "@/lib/backend"
 
 export default async function EditCustomerPage({ params }: { params: { id: string } }) {
-  const customer = (await prisma.customer.findUnique({
-    where: { id: params.id },
-  })) as unknown as CustomerRow | null
+  const customer = await backendFetch<{
+    id: string
+    name: string
+    phone: string | null
+    email: string | null
+    address: string | null
+    notes: string | null
+    latitude: number | null
+    longitude: number | null
+  }>(`/api/v1/customers/${params.id}`).catch(() => null)
 
-  if (!customer) {
-    notFound()
-  }
+  if (!customer) notFound()
 
   const updateAction = updateCustomerAction.bind(null, customer.id)
+  const mapsLink =
+    customer.latitude != null && customer.longitude != null
+      ? `https://www.google.com/maps?q=${Number(customer.latitude)},${Number(customer.longitude)}`
+      : ""
 
   return (
     <div>
@@ -53,27 +51,9 @@ export default async function EditCustomerPage({ params }: { params: { id: strin
             <Label htmlFor="address">Alamat</Label>
             <Input id="address" name="address" defaultValue={customer.address ?? ""} />
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="latitude">Latitude</Label>
-              <Input
-                id="latitude"
-                name="latitude"
-                type="number"
-                step="0.000001"
-                defaultValue={customer.latitude != null ? Number(customer.latitude) : ""}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="longitude">Longitude</Label>
-              <Input
-                id="longitude"
-                name="longitude"
-                type="number"
-                step="0.000001"
-                defaultValue={customer.longitude != null ? Number(customer.longitude) : ""}
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="mapsLink">Google Maps Link (opsional)</Label>
+            <Input id="mapsLink" name="mapsLink" defaultValue={mapsLink} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="notes">Catatan</Label>

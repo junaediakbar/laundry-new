@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, ReceiptText, Users, FileText, LogOut, User, Tags, MessageSquareText, Truck } from "lucide-react"
+import { Home, ReceiptText, Users, FileText, LogOut, User, Tags, Truck } from "lucide-react"
 
 import { signOutAction } from "@/actions/auth-actions"
 import { Button } from "@/components/ui/button"
@@ -15,8 +15,8 @@ const menus = [
   { href: "/service-types", label: "Jenis Pesanan", icon: Tags },
   { href: "/delivery-planning", label: "Perencanaan Pengiriman", icon: Truck },
   { href: "/employees", label: "Karyawan", icon: User },
+  { href: "/users", label: "Users", icon: User },
   { href: "/reports", label: "Laporan", icon: FileText },
-  { href: "/whatsapp", label: "WhatsApp", icon: MessageSquareText },
 ]
 
 export function Sidebar() {
