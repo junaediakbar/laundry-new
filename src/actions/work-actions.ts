@@ -5,10 +5,14 @@ import { revalidatePath } from 'next/cache';
 import { backendFetch } from '@/lib/backend';
 
 type WorkTaskType =
-  | 'pickup'
-  | 'dropoff'
-  | 'fuel_vehicle'
-  | 'driver'
+  | 'pickup_fuel'
+  | 'pickup_driver'
+  | 'pickup_worker_1'
+  | 'pickup_worker_2'
+  | 'dropoff_fuel'
+  | 'dropoff_driver'
+  | 'dropoff_worker_1'
+  | 'dropoff_worker_2'
   | 'dust_removal'
   | 'brushing'
   | 'rinse_sprayer'
@@ -16,10 +20,14 @@ type WorkTaskType =
   | 'finishing_packing';
 
 const taskPercents: Record<WorkTaskType, number> = {
-  pickup: 5,
-  dropoff: 5,
-  fuel_vehicle: 5,
-  driver: 5,
+  pickup_fuel: 2.5,
+  pickup_driver: 2.5,
+  pickup_worker_1: 2.5,
+  pickup_worker_2: 2.5,
+  dropoff_fuel: 2.5,
+  dropoff_driver: 2.5,
+  dropoff_worker_1: 2.5,
+  dropoff_worker_2: 2.5,
   dust_removal: 5,
   brushing: 5,
   rinse_sprayer: 5,

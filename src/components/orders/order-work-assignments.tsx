@@ -6,6 +6,7 @@ import { toast } from "react-toastify"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
+import { Save } from "lucide-react"
 
 type EmployeeOption = {
   id: string
@@ -38,11 +39,18 @@ type OrderWorkAssignmentsProps = {
   upsertWorkAssignment: (formData: FormData) => Promise<void>
 }
 
+const dropoffTasks = [
+  { key: "dropoff_fuel", label: "Bensin", percent: 2.5 },
+  { key: "dropoff_driver", label: "Driver", percent: 2.5 },
+  { key: "dropoff_worker_1", label: "Buruh 1", percent: 2.5 },
+  { key: "dropoff_worker_2", label: "Buruh 2", percent: 2.5 },
+]
+
 const pickupTasks = [
-  { key: "pickup", label: "Jemput", percent: 5 },
-  { key: "dropoff", label: "Antar", percent: 5 },
-  { key: "fuel_vehicle", label: "Bensin & Mobil", percent: 5 },
-  { key: "driver", label: "Driver", percent: 5 },
+  { key: "pickup_fuel", label: "Bensin", percent: 2.5 },
+  { key: "pickup_driver", label: "Driver", percent: 2.5 },
+  { key: "pickup_worker_1", label: "Buruh 1", percent: 2.5 },
+  { key: "pickup_worker_2", label: "Buruh 2", percent: 2.5 },
 ]
 
 const workTasks = [
@@ -129,9 +137,29 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-6 lg:grid-cols-2">
+                <div className="mt-4 grid gap-6 lg:grid-cols-3">
                   <TaskGroup
-                    title="Antar Jemput (20%)"
+                    title="Antar (10%)"
+                    tasks={dropoffTasks}
+                    itemId={item.id}
+                    orderId={orderId}
+                    employees={employees}
+                    selectedByItemAndTask={selectedByItemAndTask}
+                    pending={pending}
+                    onSubmit={(formData) => {
+                      startTransition(async () => {
+                        try {
+                          await upsertWorkAssignment(formData)
+                          toast.success("Tersimpan")
+                        } catch {
+                          toast.error("Gagal menyimpan")
+                        }
+                      })
+                    }}
+                  />
+
+                  <TaskGroup
+                    title="Jemput (10%)"
                     tasks={pickupTasks}
                     itemId={item.id}
                     orderId={orderId}
@@ -239,7 +267,7 @@ function TaskGroup({
               </div>
               <div className="sm:col-span-2">
                 <Button type="submit" size="sm" className="w-full" disabled={pending}>
-                  Simpan
+                  <Save className="h-4 w-4" />
                 </Button>
               </div>
             </form>
