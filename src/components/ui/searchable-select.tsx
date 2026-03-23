@@ -174,7 +174,7 @@ export function SearchableSelect({
     const isEmpty = !loading && options.length === 0
 
     return (
-        <div className="space-y-1.5" ref={containerRef}>
+        <div className="relative space-y-1.5" ref={containerRef}>
             {/* Hidden input untuk form submission */}
             <input type="hidden" name={name} value={selectedValue} />
 
@@ -224,7 +224,7 @@ export function SearchableSelect({
                 <div
                     role="listbox"
                     className={cn(
-                        "absolute z-50 mt-1 w-full min-w-[220px] max-w-sm rounded-md border bg-popover shadow-md",
+                        "absolute left-0 z-50 mt-1 w-full min-w-[220px] rounded-md border bg-popover shadow-md",
                         "animate-in fade-in-0 zoom-in-95 bg-white",
                     )}
                     style={{

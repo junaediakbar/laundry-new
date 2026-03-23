@@ -32,6 +32,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     items: Array<{
       id: string
       invoiceNumber: string
+      publicToken: string
       customer: { id: string; name: string }
       firstItem?: { serviceType: { id: string; name: string } } | null
       itemCount: number
@@ -65,31 +66,26 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     <div>
       <ToastQuery successParam="created" successMessage="Nota berhasil dibuat" />
       <PageHeader title="Nota" actionHref="/orders/new" actionLabel="Tambah Nota" />
-      <form className="mb-4 flex w-full gap-2 flex-between">
-        <div className="flex gap-2 w-full">
-          <Input
-            name="q"
-            defaultValue={q}
-            placeholder="Cari invoice / nama pelanggan..."
-          />
-          <Button type="submit" variant="secondary">
+      <form className="mb-4 flex w-full flex-col gap-2 sm:flex-row sm:items-end">
+        <div className="flex w-full gap-2 sm:flex-1">
+          <Input name="q" defaultValue={q} placeholder="Cari invoice / nama pelanggan..." />
+          <Button type="submit" variant="secondary" className="shrink-0">
             Cari
           </Button>
         </div>
-        <div className="flex gap-2 w-full">
-          <Select name="sort" defaultValue={sort}>
+        <div className="flex w-full gap-2 sm:w-auto">
+          <Select name="sort" defaultValue={sort} className="w-full sm:w-44">
             <option value="created_at">Terbaru</option>
             <option value="received_date">Tanggal masuk</option>
             <option value="total">Total</option>
             <option value="customer_name">Nama pelanggan</option>
             <option value="invoice_number">Invoice</option>
           </Select>
-          <Select name="dir" defaultValue={dir}>
+          <Select name="dir" defaultValue={dir} className="w-full sm:w-28">
             <option value="desc">Desc</option>
             <option value="asc">Asc</option>
           </Select>
         </div>
-
       </form>
       <Card className="p-0">
         <div className="overflow-x-auto">
@@ -126,7 +122,12 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                     <StatusBadge type="workflow" value={order.workflowStatus} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <NavigateButton href={`/orders/${order.id}`} label="Detail" />
+                    <div className="flex gap-2">
+                      <NavigateButton href={`/orders/${order.id}`} label="Detail" />
+                      {order.publicToken ? (
+                        <NavigateButton href={`/receipt/${order.publicToken}`} label="Struk" variant="secondary" />
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

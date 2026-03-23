@@ -19,11 +19,16 @@ const menus = [
   { href: "/reports", label: "Laporan", icon: FileText },
 ]
 
-export function Sidebar() {
+type SidebarProps = {
+  className?: string
+  onNavigate?: () => void
+}
+
+export function Sidebar({ className, onNavigate }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className="w-full border-r bg-background md:sticky md:top-0 md:h-screen md:w-64">
+    <aside className={cn("w-full border-r bg-background md:sticky md:top-0 md:h-screen md:w-64", className)}>
       <div className="border-b px-4 py-5">
         <p className="text-lg font-semibold leading-none">Laundry Records</p>
         <p className="mt-1 text-xs text-muted-foreground">Manajemen operasional harian</p>
@@ -36,6 +41,7 @@ export function Sidebar() {
             <Link
               key={menu.href}
               href={menu.href}
+              onClick={() => onNavigate?.()}
               className={cn(
                 "flex items-center gap-2 rounded-md px-3 py-2 text-sm",
                 active
@@ -50,7 +56,7 @@ export function Sidebar() {
         })}
       </nav>
       <form action={signOutAction} className="p-3">
-        <Button type="submit" variant="outline" className="w-full justify-start gap-2">
+        <Button type="submit" variant="outline" className="w-full justify-start gap-2" onClick={() => onNavigate?.()}>
           <LogOut className="h-4 w-4" />
           Logout
         </Button>

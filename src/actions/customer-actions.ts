@@ -63,19 +63,24 @@ export async function createCustomerAction(formData: FormData) {
 
   const coords = parseGoogleMapsLatLng(parsed.data.mapsLink);
 
+  const payload = {
+    phone: parsed.data.phone || null,
+    email: parsed.data.email || null,
+    address: parsed.data.address || null,
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    notes: parsed.data.notes || null,
+    name: parsed.data.name,
+  };
+
   const customer = await backendFetch<{ id: string }>('/api/v1/customers', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      phone: parsed.data.phone || null,
-      email: parsed.data.email || null,
-      address: parsed.data.address || null,
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-      notes: parsed.data.notes || null,
-      name: parsed.data.name,
-    }),
-  }).catch(() => null);
+    body: JSON.stringify(payload),
+  }).catch((e) => {
+    console.error('createCustomerAction error', { message: e instanceof Error ? e.message : String(e), payload });
+    return null;
+  });
 
   if (!customer) {
     redirect('/customers/new');
@@ -123,7 +128,13 @@ export async function updateCustomerAction(
         name: parsed.data.name,
       }),
     },
-  ).catch(() => null);
+  ).catch((e) => {
+    console.error('updateCustomerAction error', {
+      message: e instanceof Error ? e.message : String(e),
+      customerId,
+    });
+    return null;
+  });
 
   if (!updated) {
     redirect(`/customers/${customerId}/edit`);

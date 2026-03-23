@@ -53,12 +53,36 @@ export async function createOrderAction(formData: FormData) {
     });
   } catch (e) {
     if (e instanceof BackendFetchError) {
+      console.error('createOrderAction backend error', {
+        status: e.status,
+        code: e.code,
+        message: e.message,
+        details: e.details,
+        payload: {
+          customerId: parsed.data.customerId,
+          receivedDate: parsed.data.receivedDate || null,
+          completedDate: parsed.data.completedDate || null,
+          itemsCount: parsed.data.items.length,
+          hasImage: file instanceof File && file.size > 0,
+          imageBytes: file instanceof File ? file.size : 0,
+        },
+      });
       if (e.status === 401) redirect('/login?error=Silakan%20login%20ulang');
       redirect(`/orders/new?error=${encodeURIComponent(e.message)}`);
     }
     if (e instanceof Error) {
+      console.error('createOrderAction error', {
+        message: e.message,
+        payload: {
+          customerId: parsed.data.customerId,
+          receivedDate: parsed.data.receivedDate || null,
+          completedDate: parsed.data.completedDate || null,
+          itemsCount: parsed.data.items.length,
+        },
+      });
       redirect(`/orders/new?error=${encodeURIComponent(e.message)}`);
     }
+    console.error('createOrderAction unknown error', e);
     redirect('/orders/new?error=Gagal%20membuat%20nota');
   }
 
