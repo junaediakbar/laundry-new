@@ -2,20 +2,17 @@ import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { NavigateButton } from "@/components/shared/navigate-button"
 import { ToastQuery } from "@/components/shared/toast-query"
-import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Select } from "@/components/ui/select"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency } from "@/lib/format"
 import { backendFetch } from "@/lib/backend"
+import { OrdersFilter } from "@/components/orders/orders-filter"
 
 type OrdersPageProps = {
   searchParams?: {
     q?: string
     page?: string
-    created?: string
     sort?: string
     dir?: string
   }
@@ -43,12 +40,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     total: number
   }>(
     `/api/v1/orders?q=${encodeURIComponent(q ?? "")}&page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}&dir=${encodeURIComponent(dir)}`,
-  ).catch(
-    () => ({
-      items: [],
-      total: 0,
-    }),
-  )
+  ).catch(() => ({
+    items: [],
+    total: 0,
+  }))
+
   const orders = result.items
   const totalOrders = result.total
 
@@ -66,27 +62,10 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     <div>
       <ToastQuery successParam="created" successMessage="Nota berhasil dibuat" />
       <PageHeader title="Nota" actionHref="/orders/new" actionLabel="Tambah Nota" />
-      <form className="mb-4 flex w-full flex-col gap-2 sm:flex-row sm:items-end">
-        <div className="flex w-full gap-2 sm:flex-1">
-          <Input name="q" defaultValue={q} placeholder="Cari invoice / nama pelanggan..." />
-          <Button type="submit" variant="secondary" className="shrink-0">
-            Cari
-          </Button>
-        </div>
-        <div className="flex w-full gap-2 sm:w-auto">
-          <Select name="sort" defaultValue={sort} className="w-full sm:w-44">
-            <option value="created_at">Terbaru</option>
-            <option value="received_date">Tanggal masuk</option>
-            <option value="total">Total</option>
-            <option value="customer_name">Nama pelanggan</option>
-            <option value="invoice_number">Invoice</option>
-          </Select>
-          <Select name="dir" defaultValue={dir} className="w-full sm:w-28">
-            <option value="desc">Desc</option>
-            <option value="asc">Asc</option>
-          </Select>
-        </div>
-      </form>
+
+      {/* Filter interaktif — client component dengan debounce */}
+      <OrdersFilter defaultQ={q} defaultSort={sort} defaultDir={dir} />
+
       <Card className="p-0">
         <div className="overflow-x-auto">
           <Table>

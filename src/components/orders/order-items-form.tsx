@@ -9,7 +9,6 @@ import { SearchableSelect, type SearchableOption } from "@/components/ui/searcha
 import { Trash2 } from "lucide-react"
 
 
-
 type ServiceTypeOption = {
   id: string
   name: string
