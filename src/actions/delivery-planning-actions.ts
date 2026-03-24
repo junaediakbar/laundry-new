@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 
 import { BackendFetchError, backendFetch } from '@/lib/backend';
 import { haversineDistanceKm, nearestNeighborOrderWithEnd } from '@/lib/geo';
+import { parseGoogleMapsPoiLatLng } from '@/lib/google-maps-url';
 
 const DEFAULT_START_MAP_LINK =
   'https://www.google.com/maps/place/3+Trees+Fotocopy/@-0.8803799,119.8737962,17z/data=!3m1!4b1!4m6!3m5!1s0x2d8bec2e9c74ab8d:0x3cfd3cd0152d041!8m2!3d-0.8803799!4d119.8737962!16s%2Fg%2F11c57xrtsh?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D';
@@ -26,54 +27,6 @@ function parseDate(value: unknown) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function parseGoogleMapsLatLng(input: string | null | undefined) {
-  const raw = (input ?? '').trim();
-  if (!raw) {
-    return {
-      latitude: null as number | null,
-      longitude: null as number | null,
-    };
-  }
-  const cleaned = raw.replace(/\s/g, '');
-  const decoded = (() => {
-    try {
-      return decodeURIComponent(cleaned);
-    } catch {
-      return cleaned;
-    }
-  })();
-  // Most reliable for Google Place URLs.
-  const placeMatch = decoded.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/i);
-  if (placeMatch) {
-    return { latitude: Number(placeMatch[1]), longitude: Number(placeMatch[2]) };
-  }
-  const atMatch = decoded.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
-  if (atMatch) {
-    return { latitude: Number(atMatch[1]), longitude: Number(atMatch[2]) };
-  }
-  const qMatch = decoded.match(/[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
-  if (qMatch) {
-    return { latitude: Number(qMatch[1]), longitude: Number(qMatch[2]) };
-  }
-  const queryMatch = decoded.match(
-    /[?&]query=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i,
-  );
-  if (queryMatch) {
-    return {
-      latitude: Number(queryMatch[1]),
-      longitude: Number(queryMatch[2]),
-    };
-  }
-  const plainMatch = decoded.match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
-  if (plainMatch) {
-    return {
-      latitude: Number(plainMatch[1]),
-      longitude: Number(plainMatch[2]),
-    };
-  }
-  return { latitude: null as number | null, longitude: null as number | null };
-}
-
 export async function createDeliveryPlanAction(formData: FormData) {
   const name = String(formData.get('name') ?? '').trim();
   const plannedDate = parseDate(formData.get('plannedDate'));
@@ -84,8 +37,8 @@ export async function createDeliveryPlanAction(formData: FormData) {
   const endAddress = String(formData.get('endAddress') ?? '').trim() || null;
   const endMapsLink =
     String(formData.get('endMapsLink') ?? '').trim() || startMapsLink;
-  const startFromMaps = parseGoogleMapsLatLng(startMapsLink);
-  const endFromMaps = parseGoogleMapsLatLng(endMapsLink);
+  const startFromMaps = parseGoogleMapsPoiLatLng(startMapsLink);
+  const endFromMaps = parseGoogleMapsPoiLatLng(endMapsLink);
   const startLat = startFromMaps.latitude;
   const startLng = startFromMaps.longitude;
   const endLat = endFromMaps.latitude;

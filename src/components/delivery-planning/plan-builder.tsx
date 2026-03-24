@@ -87,7 +87,7 @@ export function PlanBuilder({
             disabled={pending}
           />
           <p className="text-xs text-muted-foreground">
-            Wajib berupa link Google Maps yang mengandung koordinat latitude,longitude.
+            Tempel URL lengkap dari halaman tempat (Bagikan) agar koordinat mengikuti pin POI, bukan posisi kamera.
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export function PlanBuilder({
             disabled={pending}
           />
           <p className="text-xs text-muted-foreground">
-            Wajib berupa link Google Maps titik akhir. Default sama dengan titik awal.
+            Sama seperti titik awal: URL lengkap tempat di Maps. Default mengikuti titik awal.
           </p>
         </div>
 

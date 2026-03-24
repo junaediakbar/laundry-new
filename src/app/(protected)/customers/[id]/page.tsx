@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { CustomerDeleteButton } from "@/components/customers/customer-delete-button"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/page-header"
+import { ToastQuery } from "@/components/shared/toast-query"
 import { NavigateButton } from "@/components/shared/navigate-button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -43,6 +44,8 @@ export default async function CustomerDetailPage({
 
   return (
     <div>
+      <ToastQuery successParam="saved" successMessage="Perubahan disimpan" />
+      <ToastQuery successParam="created" successMessage="Pelanggan berhasil ditambahkan" />
       <PageHeader title={customer.name} description="Detail pelanggan dan histori pesanan." />
       {errMsg ? (
         <Card className="mb-4 border-destructive/50 bg-destructive/5">
