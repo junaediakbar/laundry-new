@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { backendFetch } from '@/lib/backend';
+import { BackendFetchError, backendFetch } from '@/lib/backend';
 import { customerSchema } from '@/lib/validations';
 
 function parseGoogleMapsLatLng(input: string | null | undefined) {
@@ -15,13 +15,20 @@ function parseGoogleMapsLatLng(input: string | null | undefined) {
     };
 
   const cleaned = raw.replace(/\s/g, '');
+  const decoded = (() => {
+    try {
+      return decodeURIComponent(cleaned);
+    } catch {
+      return cleaned;
+    }
+  })();
 
-  const qMatch = cleaned.match(/[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
+  const qMatch = decoded.match(/[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
   if (qMatch) {
     return { latitude: Number(qMatch[1]), longitude: Number(qMatch[2]) };
   }
 
-  const queryMatch = cleaned.match(
+  const queryMatch = decoded.match(
     /[?&]query=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i,
   );
   if (queryMatch) {
@@ -31,12 +38,12 @@ function parseGoogleMapsLatLng(input: string | null | undefined) {
     };
   }
 
-  const atMatch = cleaned.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  const atMatch = decoded.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
   if (atMatch) {
     return { latitude: Number(atMatch[1]), longitude: Number(atMatch[2]) };
   }
 
-  const plainMatch = cleaned.match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
+  const plainMatch = decoded.match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
   if (plainMatch) {
     return {
       latitude: Number(plainMatch[1]),
@@ -62,6 +69,12 @@ export async function createCustomerAction(formData: FormData) {
   }
 
   const coords = parseGoogleMapsLatLng(parsed.data.mapsLink);
+  const mapsLinkRaw = (parsed.data.mapsLink ?? '').trim();
+  if (mapsLinkRaw && (coords.latitude == null || coords.longitude == null)) {
+    redirect(
+      '/customers/new?error=Link%20Maps%20tidak%20valid.%20Gunakan%20format%20yang%20mengandung%20latitude,longitude.',
+    );
+  }
 
   const payload = {
     phone: parsed.data.phone || null,
@@ -78,7 +91,10 @@ export async function createCustomerAction(formData: FormData) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   }).catch((e) => {
-    console.error('createCustomerAction error', { message: e instanceof Error ? e.message : String(e), payload });
+    console.error('createCustomerAction error', {
+      message: e instanceof Error ? e.message : String(e),
+      payload,
+    });
     return null;
   });
 
@@ -112,6 +128,12 @@ export async function updateCustomerAction(
   }
 
   const coords = parseGoogleMapsLatLng(parsed.data.mapsLink);
+  const mapsLinkRaw = (parsed.data.mapsLink ?? '').trim();
+  if (mapsLinkRaw && (coords.latitude == null || coords.longitude == null)) {
+    redirect(
+      `/customers/${customerId}/edit?error=Link%20Maps%20tidak%20valid.%20Gunakan%20format%20yang%20mengandung%20latitude,longitude.`,
+    );
+  }
 
   const updated = await backendFetch<{ id: string }>(
     `/api/v1/customers/${customerId}`,
@@ -142,4 +164,23 @@ export async function updateCustomerAction(
 
   revalidatePath('/customers');
   redirect(`/customers/${customerId}`);
+}
+
+export async function deleteCustomerAction(customerId: string) {
+  try {
+    await backendFetch<{ ok: boolean }>(`/api/v1/customers/${customerId}`, {
+      method: 'DELETE',
+    });
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      redirect(
+        `/customers/${customerId}?error=${encodeURIComponent(e.message)}`,
+      );
+    }
+    redirect(
+      `/customers/${customerId}?error=${encodeURIComponent('Gagal menghapus pelanggan')}`,
+    );
+  }
+  revalidatePath('/customers');
+  redirect('/customers');
 }

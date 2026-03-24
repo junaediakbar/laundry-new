@@ -10,7 +10,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { backendFetch } from "@/lib/backend"
 
-export default async function EditCustomerPage({ params }: { params: { id: string } }) {
+export default async function EditCustomerPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string }
+  searchParams?: { error?: string }
+}) {
   const customer = await backendFetch<{
     id: string
     name: string
@@ -33,6 +39,7 @@ export default async function EditCustomerPage({ params }: { params: { id: strin
   return (
     <div>
       <PageHeader title={`Edit ${customer.name}`} />
+      {searchParams?.error ? <p className="mb-4 text-sm text-red-600">{searchParams.error}</p> : null}
       <Card className="max-w-xl">
         <form action={updateAction} className="space-y-4">
           <div className="space-y-2">

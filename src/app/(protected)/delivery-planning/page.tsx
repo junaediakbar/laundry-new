@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { PageHeader } from "@/components/shared/page-header"
+import { DeliveryPlanDeleteButton } from "@/components/delivery-planning/delivery-plan-delete-button"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -40,11 +41,14 @@ export default async function DeliveryPlanningPage() {
                   <TableCell>{formatDate(plan.plannedDate)}</TableCell>
                   <TableCell>{plan.stopCount}</TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <Link href={`/delivery-planning/${plan.id}`}>
-                      <Button size="sm" variant="outline">
-                        Detail
-                      </Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/delivery-planning/${plan.id}`}>
+                        <Button size="sm" variant="outline">
+                          Detail
+                        </Button>
+                      </Link>
+                      <DeliveryPlanDeleteButton planId={plan.id} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

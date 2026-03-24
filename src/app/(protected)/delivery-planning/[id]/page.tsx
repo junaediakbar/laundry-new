@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { PageHeader } from "@/components/shared/page-header"
+import { DeliveryPlanDeleteButton } from "@/components/delivery-planning/delivery-plan-delete-button"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -72,6 +73,7 @@ export default async function DeliveryPlanDetailPage({ params }: { params: { id:
         <Link href="/delivery-planning">
           <Button variant="outline">Kembali</Button>
         </Link>
+        <DeliveryPlanDeleteButton planId={plan.id} />
         {mapsUrl ? (
           <a href={mapsUrl} target="_blank" rel="noreferrer">
             <Button>Open Route (Google Maps)</Button>

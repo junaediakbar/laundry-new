@@ -8,10 +8,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 
-export default function NewCustomerPage() {
+export default function NewCustomerPage({
+  searchParams,
+}: {
+  searchParams?: { error?: string }
+}) {
+  const error = searchParams?.error
   return (
     <div>
       <PageHeader title="Tambah Pelanggan" />
+      {error ? <p className="mb-4 text-sm text-red-600">{error}</p> : null}
       <Card className="max-w-xl">
         <form action={createCustomerAction} className="space-y-4">
           <div className="space-y-2">

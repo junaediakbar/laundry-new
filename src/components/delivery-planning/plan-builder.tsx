@@ -72,6 +72,19 @@ export function PlanBuilder({ customers, defaultStartLat = -0.8986, defaultStart
           <Input id="startAddress" name="startAddress" placeholder="Workshop / Gudang" disabled={pending} />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="startMapsLink">Start Maps Link (opsional)</Label>
+          <Input
+            id="startMapsLink"
+            name="startMapsLink"
+            placeholder="https://www.google.com/maps?q=-6.2,106.8"
+            disabled={pending}
+          />
+          <p className="text-xs text-muted-foreground">
+            Jika diisi, koordinat start akan diambil dari link ini. Jika kosong, gunakan Start Latitude/Longitude di bawah.
+          </p>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="startLat">Start Latitude</Label>

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
+import { CustomerDeleteButton } from "@/components/customers/customer-delete-button"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/page-header"
 import { NavigateButton } from "@/components/shared/navigate-button"
@@ -8,7 +9,13 @@ import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { backendFetch } from "@/lib/backend"
 
-export default async function CustomerDetailPage({ params }: { params: { id: string } }) {
+export default async function CustomerDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string }
+  searchParams?: { error?: string }
+}) {
   const [customer, orders] = await Promise.all([
     backendFetch<{
       id: string
@@ -32,9 +39,16 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
   const lng = customer.longitude != null ? Number(customer.longitude) : null
   const mapsHref = lat != null && lng != null ? `https://www.google.com/maps?q=${lat},${lng}` : null
 
+  const errMsg = searchParams?.error?.trim()
+
   return (
     <div>
       <PageHeader title={customer.name} description="Detail pelanggan dan histori pesanan." />
+      {errMsg ? (
+        <Card className="mb-4 border-destructive/50 bg-destructive/5">
+          <p className="text-sm text-destructive">{errMsg}</p>
+        </Card>
+      ) : null}
       <div className="mb-4 grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <div className="flex items-start justify-between gap-4">
@@ -42,9 +56,12 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
               <p className="text-sm text-muted-foreground">Telepon</p>
               <p className="font-medium">{customer.phone ?? "-"}</p>
             </div>
-            <Link href={`/customers/${customer.id}/edit`}>
-              <Button variant="outline">Edit</Button>
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/customers/${customer.id}/edit`}>
+                <Button variant="outline">Edit</Button>
+              </Link>
+              <CustomerDeleteButton customerId={customer.id} />
+            </div>
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">

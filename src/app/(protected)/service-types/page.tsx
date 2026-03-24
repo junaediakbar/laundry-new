@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { PageHeader } from "@/components/shared/page-header"
+import { ServiceTypeDeleteButton } from "@/components/service-types/service-type-delete-button"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -76,11 +77,14 @@ export default async function ServiceTypesPage({ searchParams }: ServiceTypesPag
                   <TableCell>{formatCurrency(Number(serviceType.defaultPrice))}</TableCell>
                   <TableCell>{serviceType.isActive ? "Aktif" : "Nonaktif"}</TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <Link href={`/service-types/${serviceType.id}/edit`}>
-                      <Button size="sm" variant="outline">
-                        Edit
-                      </Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/service-types/${serviceType.id}/edit`}>
+                        <Button size="sm" variant="outline">
+                          Edit
+                        </Button>
+                      </Link>
+                      <ServiceTypeDeleteButton serviceTypeId={serviceType.id} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

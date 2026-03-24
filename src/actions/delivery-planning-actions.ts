@@ -30,13 +30,60 @@ function parseNumber(value: unknown) {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseGoogleMapsLatLng(input: string | null | undefined) {
+  const raw = (input ?? '').trim();
+  if (!raw) {
+    return {
+      latitude: null as number | null,
+      longitude: null as number | null,
+    };
+  }
+  const cleaned = raw.replace(/\s/g, '');
+  const decoded = (() => {
+    try {
+      return decodeURIComponent(cleaned);
+    } catch {
+      return cleaned;
+    }
+  })();
+  const qMatch = decoded.match(/[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
+  if (qMatch) {
+    return { latitude: Number(qMatch[1]), longitude: Number(qMatch[2]) };
+  }
+  const queryMatch = decoded.match(
+    /[?&]query=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i,
+  );
+  if (queryMatch) {
+    return {
+      latitude: Number(queryMatch[1]),
+      longitude: Number(queryMatch[2]),
+    };
+  }
+  const atMatch = decoded.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (atMatch) {
+    return { latitude: Number(atMatch[1]), longitude: Number(atMatch[2]) };
+  }
+  const plainMatch = decoded.match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
+  if (plainMatch) {
+    return {
+      latitude: Number(plainMatch[1]),
+      longitude: Number(plainMatch[2]),
+    };
+  }
+  return { latitude: null as number | null, longitude: null as number | null };
+}
+
 export async function createDeliveryPlanAction(formData: FormData) {
   const name = String(formData.get('name') ?? '').trim();
   const plannedDate = parseDate(formData.get('plannedDate'));
   const startAddress =
     String(formData.get('startAddress') ?? '').trim() || null;
-  const startLat = parseNumber(formData.get('startLat'));
-  const startLng = parseNumber(formData.get('startLng'));
+  const startMapsLink = String(formData.get('startMapsLink') ?? '').trim();
+  const startFromMaps = parseGoogleMapsLatLng(startMapsLink);
+  const startLat =
+    startFromMaps.latitude ?? parseNumber(formData.get('startLat'));
+  const startLng =
+    startFromMaps.longitude ?? parseNumber(formData.get('startLng'));
   const customerIds = parseJsonArray(formData.get('customerIds')).filter(
     (v) => typeof v === 'string',
   );
@@ -48,7 +95,9 @@ export async function createDeliveryPlanAction(formData: FormData) {
     startLat == null ||
     startLng == null
   ) {
-    redirect('/delivery-planning/new?error=Input%20tidak%20valid');
+    redirect(
+      '/delivery-planning/new?error=Input%20tidak%20valid.%20Isi%20Start%20Maps%20Link%20atau%20lat/lng.',
+    );
   }
 
   const customersPaged = await backendFetch<{
@@ -115,4 +164,12 @@ export async function createDeliveryPlanAction(formData: FormData) {
 
   revalidatePath('/delivery-planning');
   redirect(`/delivery-planning/${created.id}`);
+}
+
+export async function deleteDeliveryPlanAction(planId: string) {
+  await backendFetch(`/api/v1/delivery-plans/${planId}`, {
+    method: 'DELETE',
+  }).catch(() => null);
+  revalidatePath('/delivery-planning');
+  redirect('/delivery-planning');
 }

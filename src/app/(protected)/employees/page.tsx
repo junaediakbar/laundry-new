@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { PageHeader } from "@/components/shared/page-header"
+import { EmployeeDeleteButton } from "@/components/employees/employee-delete-button"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -20,11 +21,12 @@ export default async function EmployeesPage({ searchParams }: EmployeesPageProps
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
   const pageSize = 20
 
-  const all = await backendFetch<Array<{ id: string; name: string; isActive: boolean }>>(
+  const allRaw = await backendFetch<Array<{ id: string; name: string; isActive: boolean }>>(
     `/api/v1/employees`,
   ).catch(() => [])
+  const all = Array.isArray(allRaw) ? allRaw : []
   const filtered = q
-    ? all.filter((e) => e.name.toLowerCase().includes(q.toLowerCase()))
+    ? all.filter((e) => (e.name ?? "").toLowerCase().includes(q.toLowerCase()))
     : all
   const totalEmployees = filtered.length
   const employees = filtered.slice((page - 1) * pageSize, page * pageSize)
@@ -67,11 +69,14 @@ export default async function EmployeesPage({ searchParams }: EmployeesPageProps
                   <TableCell className="font-medium">{employee.name}</TableCell>
                   <TableCell>{employee.isActive ? "Aktif" : "Nonaktif"}</TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <Link href={`/employees/${employee.id}/edit`}>
-                      <Button size="sm" variant="outline">
-                        Edit
-                      </Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/employees/${employee.id}/edit`}>
+                        <Button size="sm" variant="outline">
+                          Edit
+                        </Button>
+                      </Link>
+                      <EmployeeDeleteButton employeeId={employee.id} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

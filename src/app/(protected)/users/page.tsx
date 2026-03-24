@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { PageHeader } from "@/components/shared/page-header"
+import { UserDeleteButton } from "@/components/users/user-delete-button"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -41,11 +42,14 @@ export default async function UsersPage() {
                   <TableCell className="capitalize">{u.role}</TableCell>
                   <TableCell>{u.isActive ? "Aktif" : "Nonaktif"}</TableCell>
                   <TableCell className="whitespace-nowrap">
-                    <Link href={`/users/${u.id}/edit`}>
-                      <Button size="sm" variant="outline">
-                        Edit
-                      </Button>
-                    </Link>
+                    <div className="flex gap-2">
+                      <Link href={`/users/${u.id}/edit`}>
+                        <Button size="sm" variant="outline">
+                          Edit
+                        </Button>
+                      </Link>
+                      <UserDeleteButton userId={u.id} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

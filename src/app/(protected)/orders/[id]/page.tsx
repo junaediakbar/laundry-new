@@ -2,6 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { createPaymentAction, updateWorkflowAction } from "@/actions/order-actions"
+import { OrderDeleteButton } from "@/components/orders/order-delete-button"
 import { upsertWorkAssignmentAction } from "@/actions/work-actions"
 import { OrderDetailForms } from "@/components/orders/order-detail-forms"
 import { OrderAttachments } from "@/components/orders/order-attachments"
@@ -61,7 +62,13 @@ type OrderDetail = {
   attachments: Array<{ id: string; filePath: string; createdAt: string }>
 }
 
-export default async function OrderDetailPage({ params }: { params: { id: string } }) {
+export default async function OrderDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string }
+  searchParams?: { error?: string }
+}) {
   const employeesPromise = backendFetch<EmployeeOption[]>(`/api/v1/employees?active=true`).catch(() => [])
   let order: OrderDetail | null = null
   let orderError: unknown = null
@@ -118,9 +125,15 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   }
 
   const itemCount = order.items.length
+  const errMsg = searchParams?.error?.trim()
 
   return (
     <div className="space-y-4">
+      {errMsg ? (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <p className="text-sm text-destructive">{errMsg}</p>
+        </Card>
+      ) : null}
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -128,7 +141,8 @@ export default async function OrderDetailPage({ params }: { params: { id: string
               <h1 className="text-xl font-semibold">{order.invoiceNumber}</h1>
               <p className="text-sm text-muted-foreground">{order.customer.name}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <OrderDeleteButton orderId={orderId} />
               <StatusBadge type="payment" value={order.paymentStatus} />
               <StatusBadge type="workflow" value={order.workflowStatus} />
             </div>

@@ -51,3 +51,10 @@ export async function updateEmployeeAction(employeeId: string, formData: FormDat
   revalidatePath('/employees');
   redirect('/employees');
 }
+
+
+export async function deleteEmployeeAction(employeeId: string) {
+  await backendFetch(`/api/v1/employees/${employeeId}`, { method: 'DELETE' }).catch(() => null);
+  revalidatePath('/employees');
+  redirect('/employees');
+}

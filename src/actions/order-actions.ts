@@ -141,3 +141,22 @@ export async function createPaymentAction(formData: FormData) {
   revalidatePath(`/orders/${parsed.data.orderId}`);
   revalidatePath('/orders');
 }
+
+export async function deleteOrderAction(orderId: string) {
+  try {
+    await backendFetch<{ ok: boolean }>(`/api/v1/orders/${orderId}`, {
+      method: 'DELETE',
+    });
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      redirect(
+        `/orders/${orderId}?error=${encodeURIComponent(e.message)}`,
+      );
+    }
+    redirect(
+      `/orders/${orderId}?error=${encodeURIComponent('Gagal menghapus nota')}`,
+    );
+  }
+  revalidatePath('/orders');
+  redirect('/orders');
+}

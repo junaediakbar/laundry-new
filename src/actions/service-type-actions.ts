@@ -62,3 +62,10 @@ export async function updateServiceTypeAction(
   revalidatePath('/service-types');
   redirect('/service-types');
 }
+
+
+export async function deleteServiceTypeAction(serviceTypeId: string) {
+  await backendFetch(`/api/v1/service-types/${serviceTypeId}`, { method: 'DELETE' }).catch(() => null);
+  revalidatePath('/service-types');
+  redirect('/service-types');
+}
