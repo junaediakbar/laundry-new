@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { BackendFetchError, backendFetch } from '@/lib/backend';
-import { haversineDistanceKm, nearestNeighborOrder } from '@/lib/geo';
+import { haversineDistanceKm, nearestNeighborOrderWithEnd } from '@/lib/geo';
 
 const DEFAULT_START_MAP_LINK =
   'https://www.google.com/maps/place/3+Trees+Fotocopy/@-0.8803799,119.8737962,17z/data=!3m1!4b1!4m6!3m5!1s0x2d8bec2e9c74ab8d:0x3cfd3cd0152d041!8m2!3d-0.8803799!4d119.8737962!16s%2Fg%2F11c57xrtsh?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D';
@@ -81,9 +81,15 @@ export async function createDeliveryPlanAction(formData: FormData) {
     String(formData.get('startAddress') ?? '').trim() || null;
   const startMapsLink =
     String(formData.get('startMapsLink') ?? '').trim() || DEFAULT_START_MAP_LINK;
+  const endAddress = String(formData.get('endAddress') ?? '').trim() || null;
+  const endMapsLink =
+    String(formData.get('endMapsLink') ?? '').trim() || startMapsLink;
   const startFromMaps = parseGoogleMapsLatLng(startMapsLink);
+  const endFromMaps = parseGoogleMapsLatLng(endMapsLink);
   const startLat = startFromMaps.latitude;
   const startLng = startFromMaps.longitude;
+  const endLat = endFromMaps.latitude;
+  const endLng = endFromMaps.longitude;
   const customerIds = parseJsonArray(formData.get('customerIds')).filter(
     (v) => typeof v === 'string',
   );
@@ -93,10 +99,12 @@ export async function createDeliveryPlanAction(formData: FormData) {
     !plannedDate ||
     customerIds.length === 0 ||
     startLat == null ||
-    startLng == null
+    startLng == null ||
+    endLat == null ||
+    endLng == null
   ) {
     redirect(
-      '/delivery-planning/new?error=Input%20tidak%20valid.%20Link%20Google%20Maps%20titik%20awal%20wajib%20valid.',
+      '/delivery-planning/new?error=Input%20tidak%20valid.%20Link%20Google%20Maps%20titik%20awal/akhir%20wajib%20valid.',
     );
   }
 
@@ -122,6 +130,7 @@ export async function createDeliveryPlanAction(formData: FormData) {
   }
 
   const start = { lat: startLat, lng: startLng };
+  const end = { lat: endLat, lng: endLng };
   const points = customers.map((c) => ({
     customerId: c.id,
     name: c.name,
@@ -129,7 +138,7 @@ export async function createDeliveryPlanAction(formData: FormData) {
     location: { lat: Number(c.latitude), lng: Number(c.longitude) },
   }));
 
-  const ordered = nearestNeighborOrder(start, points);
+  const ordered = nearestNeighborOrderWithEnd(start, end, points);
 
   const stops = ordered.map((p, index) => {
     const prev = index === 0 ? start : ordered[index - 1].location;
@@ -150,6 +159,9 @@ export async function createDeliveryPlanAction(formData: FormData) {
       startAddress,
       startLat,
       startLng,
+      endAddress,
+      endLat,
+      endLng,
       stops: stops.map((s) => ({
         customerId: s.customerId,
         sequence: s.sequence,

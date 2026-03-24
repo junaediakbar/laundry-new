@@ -16,6 +16,9 @@ type PlanDetail = {
   startAddress: string | null
   startLat: number | null
   startLng: number | null
+  endAddress: string | null
+  endLat: number | null
+  endLng: number | null
   stops: Array<{
     id: string
     sequence: number
@@ -51,8 +54,12 @@ export default async function DeliveryPlanDetailPage({ params }: { params: { id:
 
   const startLat = plan.startLat != null ? Number(plan.startLat) : -0.8986
   const startLng = plan.startLng != null ? Number(plan.startLng) : 119.8707
+  const endLat = plan.endLat != null ? Number(plan.endLat) : startLat
+  const endLng = plan.endLng != null ? Number(plan.endLng) : startLng
   const startHref =
     plan.startLat != null && plan.startLng != null ? `https://www.google.com/maps?q=${startLat},${startLng}` : null
+  const endHref =
+    plan.endLat != null && plan.endLng != null ? `https://www.google.com/maps?q=${endLat},${endLng}` : null
 
   const stopLocations = plan.stops
     .map((s) => {
@@ -63,7 +70,7 @@ export default async function DeliveryPlanDetailPage({ params }: { params: { id:
     })
     .filter((v): v is { lat: number; lng: number } => v != null)
 
-  const mapsUrl = buildGoogleMapsDirectionsUrl({ lat: startLat, lng: startLng }, stopLocations)
+  const mapsUrl = buildGoogleMapsDirectionsUrl({ lat: startLat, lng: startLng }, stopLocations, { lat: endLat, lng: endLng })
 
   return (
     <div>
@@ -97,6 +104,17 @@ export default async function DeliveryPlanDetailPage({ params }: { params: { id:
           <div>
             <p className="text-sm text-muted-foreground">Jumlah Stop</p>
             <p className="mt-1 text-sm font-medium">{plan.stops.length}</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Titik Akhir</p>
+            <p className="mt-1 text-sm font-medium">{plan.endAddress ?? "-"}</p>
+            {endHref ? (
+              <a href={endHref} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs underline underline-offset-4">
+                Buka di Google Maps
+              </a>
+            ) : (
+              <p className="mt-1 text-xs text-muted-foreground">-</p>
+            )}
           </div>
         </div>
       </Card>

@@ -40,11 +40,44 @@ export function nearestNeighborOrder<T extends { location: LatLng }>(start: LatL
   return ordered
 }
 
-export function buildGoogleMapsDirectionsUrl(start: LatLng, stops: LatLng[]) {
+export function nearestNeighborOrderWithEnd<T extends { location: LatLng }>(
+  start: LatLng,
+  end: LatLng,
+  points: T[],
+) {
+  const remaining = [...points]
+  const ordered: T[] = []
+  let current = start
+
+  while (remaining.length > 0) {
+    let bestIndex = 0
+    let bestScore = Number.POSITIVE_INFINITY
+
+    for (let i = 0; i < remaining.length; i++) {
+      const candidate = remaining[i]
+      const score =
+        haversineDistanceKm(current, candidate.location) +
+        haversineDistanceKm(candidate.location, end)
+      if (score < bestScore) {
+        bestScore = score
+        bestIndex = i
+      }
+    }
+
+    const next = remaining.splice(bestIndex, 1)[0]
+    ordered.push(next)
+    current = next.location
+  }
+
+  return ordered
+}
+
+export function buildGoogleMapsDirectionsUrl(start: LatLng, stops: LatLng[], end?: LatLng) {
   if (stops.length === 0) return null
   const origin = `${start.lat},${start.lng}`
-  const destination = `${stops[stops.length - 1].lat},${stops[stops.length - 1].lng}`
-  const waypoints = stops.slice(0, -1).map((s) => `${s.lat},${s.lng}`)
+  const destinationPoint = end ?? stops[stops.length - 1]
+  const destination = `${destinationPoint.lat},${destinationPoint.lng}`
+  const waypoints = (end ? stops : stops.slice(0, -1)).map((s) => `${s.lat},${s.lng}`)
   const params = new URLSearchParams({
     api: "1",
     origin,

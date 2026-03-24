@@ -19,6 +19,7 @@ type CustomerOption = {
 type PlanBuilderProps = {
   customers: CustomerOption[]
   defaultStartMapsLink?: string
+  defaultEndMapsLink?: string
 }
 
 function todayIso() {
@@ -32,6 +33,7 @@ function todayIso() {
 export function PlanBuilder({
   customers,
   defaultStartMapsLink = "https://www.google.com/maps/place/3+Trees+Fotocopy/@-0.8803799,119.8737962,17z/data=!3m1!4b1!4m6!3m5!1s0x2d8bec2e9c74ab8d:0x3cfd3cd0152d041!8m2!3d-0.8803799!4d119.8737962!16s%2Fg%2F11c57xrtsh?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D",
+  defaultEndMapsLink = "https://www.google.com/maps/place/3+Trees+Fotocopy/@-0.8803799,119.8737962,17z/data=!3m1!4b1!4m6!3m5!1s0x2d8bec2e9c74ab8d:0x3cfd3cd0152d041!8m2!3d-0.8803799!4d119.8737962!16s%2Fg%2F11c57xrtsh?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D",
 }: PlanBuilderProps) {
   const [pending, startTransition] = useTransition()
   const [q, setQ] = useState("")
@@ -86,6 +88,21 @@ export function PlanBuilder({
           />
           <p className="text-xs text-muted-foreground">
             Wajib berupa link Google Maps yang mengandung koordinat latitude,longitude.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="endMapsLink">End Maps Link</Label>
+          <Input
+            id="endMapsLink"
+            name="endMapsLink"
+            required
+            defaultValue={defaultEndMapsLink}
+            placeholder="https://www.google.com/maps/place/..."
+            disabled={pending}
+          />
+          <p className="text-xs text-muted-foreground">
+            Wajib berupa link Google Maps titik akhir. Default sama dengan titik awal.
           </p>
         </div>
 
