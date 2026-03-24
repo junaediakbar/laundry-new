@@ -15,13 +15,19 @@ type DeliveryPlanRow = {
   stopCount: number
 }
 
-export default async function DeliveryPlanningPage() {
+export default async function DeliveryPlanningPage({
+  searchParams,
+}: {
+  searchParams?: { error?: string }
+}) {
+  const err = searchParams?.error?.trim() ?? ""
   const plans =
     (await backendFetch<DeliveryPlanRow[]>(`/api/v1/delivery-plans?limit=50`).catch(() => [])) ?? []
 
   return (
     <div>
       <PageHeader title="Perencanaan Pengiriman" actionHref="/delivery-planning/new" actionLabel="Buat Rencana" />
+      {err ? <p className="mb-4 text-sm text-red-600">{err}</p> : null}
 
       <Card className="p-0">
         <div className="overflow-x-auto">

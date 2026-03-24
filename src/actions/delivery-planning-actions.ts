@@ -3,8 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { backendFetch } from '@/lib/backend';
+import { BackendFetchError, backendFetch } from '@/lib/backend';
 import { haversineDistanceKm, nearestNeighborOrder } from '@/lib/geo';
+
+const DEFAULT_START_MAP_LINK =
+  'https://www.google.com/maps/place/3+Trees+Fotocopy/@-0.8803799,119.8737962,17z/data=!3m1!4b1!4m6!3m5!1s0x2d8bec2e9c74ab8d:0x3cfd3cd0152d041!8m2!3d-0.8803799!4d119.8737962!16s%2Fg%2F11c57xrtsh?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D';
 
 function parseJsonArray(value: unknown) {
   if (typeof value !== 'string' || value.length === 0) return [];
@@ -23,13 +26,6 @@ function parseDate(value: unknown) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function parseNumber(value: unknown) {
-  if (typeof value !== 'string') return null;
-  if (!value.trim()) return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
-}
-
 function parseGoogleMapsLatLng(input: string | null | undefined) {
   const raw = (input ?? '').trim();
   if (!raw) {
@@ -46,6 +42,15 @@ function parseGoogleMapsLatLng(input: string | null | undefined) {
       return cleaned;
     }
   })();
+  // Most reliable for Google Place URLs.
+  const placeMatch = decoded.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/i);
+  if (placeMatch) {
+    return { latitude: Number(placeMatch[1]), longitude: Number(placeMatch[2]) };
+  }
+  const atMatch = decoded.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (atMatch) {
+    return { latitude: Number(atMatch[1]), longitude: Number(atMatch[2]) };
+  }
   const qMatch = decoded.match(/[?&]q=(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/i);
   if (qMatch) {
     return { latitude: Number(qMatch[1]), longitude: Number(qMatch[2]) };
@@ -58,10 +63,6 @@ function parseGoogleMapsLatLng(input: string | null | undefined) {
       latitude: Number(queryMatch[1]),
       longitude: Number(queryMatch[2]),
     };
-  }
-  const atMatch = decoded.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
-  if (atMatch) {
-    return { latitude: Number(atMatch[1]), longitude: Number(atMatch[2]) };
   }
   const plainMatch = decoded.match(/^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
   if (plainMatch) {
@@ -78,12 +79,11 @@ export async function createDeliveryPlanAction(formData: FormData) {
   const plannedDate = parseDate(formData.get('plannedDate'));
   const startAddress =
     String(formData.get('startAddress') ?? '').trim() || null;
-  const startMapsLink = String(formData.get('startMapsLink') ?? '').trim();
+  const startMapsLink =
+    String(formData.get('startMapsLink') ?? '').trim() || DEFAULT_START_MAP_LINK;
   const startFromMaps = parseGoogleMapsLatLng(startMapsLink);
-  const startLat =
-    startFromMaps.latitude ?? parseNumber(formData.get('startLat'));
-  const startLng =
-    startFromMaps.longitude ?? parseNumber(formData.get('startLng'));
+  const startLat = startFromMaps.latitude;
+  const startLng = startFromMaps.longitude;
   const customerIds = parseJsonArray(formData.get('customerIds')).filter(
     (v) => typeof v === 'string',
   );
@@ -96,7 +96,7 @@ export async function createDeliveryPlanAction(formData: FormData) {
     startLng == null
   ) {
     redirect(
-      '/delivery-planning/new?error=Input%20tidak%20valid.%20Isi%20Start%20Maps%20Link%20atau%20lat/lng.',
+      '/delivery-planning/new?error=Input%20tidak%20valid.%20Link%20Google%20Maps%20titik%20awal%20wajib%20valid.',
     );
   }
 
@@ -167,9 +167,16 @@ export async function createDeliveryPlanAction(formData: FormData) {
 }
 
 export async function deleteDeliveryPlanAction(planId: string) {
-  await backendFetch(`/api/v1/delivery-plans/${planId}`, {
-    method: 'DELETE',
-  }).catch(() => null);
+  try {
+    await backendFetch(`/api/v1/delivery-plans/${planId}`, {
+      method: 'DELETE',
+    });
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      redirect(`/delivery-planning?error=${encodeURIComponent(e.message)}`);
+    }
+    redirect('/delivery-planning?error=Gagal%20menghapus%20rencana');
+  }
   revalidatePath('/delivery-planning');
   redirect('/delivery-planning');
 }

@@ -18,8 +18,7 @@ type CustomerOption = {
 
 type PlanBuilderProps = {
   customers: CustomerOption[]
-  defaultStartLat?: number
-  defaultStartLng?: number
+  defaultStartMapsLink?: string
 }
 
 function todayIso() {
@@ -30,7 +29,10 @@ function todayIso() {
   return `${yyyy}-${mm}-${dd}`
 }
 
-export function PlanBuilder({ customers, defaultStartLat = -0.8986, defaultStartLng = 119.8707 }: PlanBuilderProps) {
+export function PlanBuilder({
+  customers,
+  defaultStartMapsLink = "https://www.google.com/maps/place/3+Trees+Fotocopy/@-0.8803799,119.8737962,17z/data=!3m1!4b1!4m6!3m5!1s0x2d8bec2e9c74ab8d:0x3cfd3cd0152d041!8m2!3d-0.8803799!4d119.8737962!16s%2Fg%2F11c57xrtsh?entry=ttu&g_ep=EgoyMDI2MDMxOC4xIKXMDSoASAFQAw%3D%3D",
+}: PlanBuilderProps) {
   const [pending, startTransition] = useTransition()
   const [q, setQ] = useState("")
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -73,53 +75,23 @@ export function PlanBuilder({ customers, defaultStartLat = -0.8986, defaultStart
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="startMapsLink">Start Maps Link (opsional)</Label>
+          <Label htmlFor="startMapsLink">Start Maps Link</Label>
           <Input
             id="startMapsLink"
             name="startMapsLink"
-            placeholder="https://www.google.com/maps?q=-6.2,106.8"
+            required
+            defaultValue={defaultStartMapsLink}
+            placeholder="https://www.google.com/maps/place/..."
             disabled={pending}
           />
           <p className="text-xs text-muted-foreground">
-            Jika diisi, koordinat start akan diambil dari link ini. Jika kosong, gunakan Start Latitude/Longitude di bawah.
+            Wajib berupa link Google Maps yang mengandung koordinat latitude,longitude.
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="startLat">Start Latitude</Label>
-            <Input
-              id="startLat"
-              name="startLat"
-              type="number"
-              step="0.000001"
-              required
-              defaultValue={defaultStartLat}
-              disabled={pending}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="startLng">Start Longitude</Label>
-            <Input
-              id="startLng"
-              name="startLng"
-              type="number"
-              step="0.000001"
-              required
-              defaultValue={defaultStartLng}
-              disabled={pending}
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">Pilih Lokasi Pengiriman</p>
-            <p className="text-xs text-muted-foreground">{selectedCount} dipilih</p>
-          </div>
-          <Button type="submit" disabled={pending || selectedCount === 0}>
-            {pending ? "Menyimpan..." : "Buat Rencana"}
-          </Button>
+        <div className="space-y-1">
+          <p className="text-sm font-semibold">Pilih Lokasi Pengiriman</p>
+          <p className="text-xs text-muted-foreground">{selectedCount} dipilih</p>
         </div>
 
         <div className="flex gap-2">
@@ -173,6 +145,12 @@ export function PlanBuilder({ customers, defaultStartLat = -0.8986, defaultStart
               <div className="p-6 text-center text-sm text-muted-foreground">Tidak ada pelanggan yang cocok.</div>
             ) : null}
           </div>
+        </div>
+
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={pending || selectedCount === 0}>
+            {pending ? "Menyimpan..." : "Buat Rencana"}
+          </Button>
         </div>
       </form>
     </Card>
