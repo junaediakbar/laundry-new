@@ -2,7 +2,18 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, ReceiptText, Users, FileText, LogOut, User, Tags, Truck } from "lucide-react"
+import {
+  Droplets,
+  FileText,
+  Home,
+  LogOut,
+  ReceiptText,
+  Tags,
+  Truck,
+  User,
+  UserCog,
+  Users,
+} from "lucide-react"
 
 import { signOutAction } from "@/actions/auth-actions"
 import { Button } from "@/components/ui/button"
@@ -15,9 +26,9 @@ const menus = [
   { href: "/service-types", label: "Jenis Pesanan", icon: Tags },
   { href: "/delivery-planning", label: "Perencanaan Pengiriman", icon: Truck },
   { href: "/employees", label: "Karyawan", icon: User },
-  { href: "/users", label: "Users", icon: User },
+  { href: "/users", label: "Users", icon: UserCog },
   { href: "/reports", label: "Laporan", icon: FileText },
-]
+] as const
 
 type SidebarProps = {
   className?: string
@@ -28,12 +39,25 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className={cn("w-full border-r bg-background md:sticky md:top-0 md:h-screen md:w-64", className)}>
-      <div className="border-b px-4 py-5">
-        <p className="text-lg font-semibold leading-none">Laundry Records</p>
-        <p className="mt-1 text-xs text-muted-foreground">Manajemen operasional harian</p>
+    <aside
+      className={cn(
+        "flex w-full flex-col border-r border-border/60 bg-background/95 backdrop-blur-sm md:sticky md:top-0 md:h-screen md:w-64",
+        "landscape:max-h-[100dvh] landscape:overflow-hidden md:landscape:h-screen",
+        className,
+      )}
+    >
+      <div className="border-b border-border/60 bg-gradient-to-r from-primary/5 to-transparent px-4 py-5">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/10">
+            <Droplets className="h-5 w-5" aria-hidden />
+          </span>
+          <div>
+            <p className="text-lg font-semibold leading-none tracking-tight">Laundry Records</p>
+            <p className="mt-1 text-xs text-muted-foreground">Manajemen operasional harian</p>
+          </div>
+        </div>
       </div>
-      <nav className="space-y-1 p-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto p-3 [scrollbar-width:thin]">
         {menus.map((menu) => {
           const Icon = menu.icon
           const active = pathname.startsWith(menu.href)
@@ -43,20 +67,34 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
               href={menu.href}
               onClick={() => onNavigate?.()}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm",
+                "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 active
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20 ring-1 ring-primary/20"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground hover:shadow-sm",
               )}
             >
-              <Icon className="h-4 w-4" />
+              <span
+                className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors",
+                  active
+                    ? "bg-primary-foreground/15"
+                    : "bg-muted group-hover:bg-background/80",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+              </span>
               <span>{menu.label}</span>
             </Link>
           )
         })}
       </nav>
-      <form action={signOutAction} className="p-3">
-        <Button type="submit" variant="outline" className="w-full justify-start gap-2" onClick={() => onNavigate?.()}>
+      <form action={signOutAction} className="border-t border-border/60 p-3 safe-bottom">
+        <Button
+          type="submit"
+          variant="outline"
+          className="w-full justify-start gap-2 transition-transform hover:bg-secondary active:scale-[0.99]"
+          onClick={() => onNavigate?.()}
+        >
           <LogOut className="h-4 w-4" />
           Logout
         </Button>
