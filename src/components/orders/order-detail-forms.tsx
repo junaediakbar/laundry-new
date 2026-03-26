@@ -67,8 +67,12 @@ export function OrderDetailForms({
                 await createPayment(formData)
                 toast.success("Pembayaran berhasil disimpan")
                 paymentFormRef.current?.reset()
-              } catch {
-                toast.error("Gagal menyimpan pembayaran")
+              } catch (e) {
+                const msg =
+                  e instanceof Error && e.message.trim()
+                    ? e.message
+                    : "Gagal menyimpan pembayaran"
+                toast.error(msg)
               }
             })
           }}

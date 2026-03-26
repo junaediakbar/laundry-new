@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SearchableSelect, type SearchableOption } from "@/components/ui/searchable-select"
+import { Select } from "@/components/ui/select"
 import { Trash2 } from "lucide-react"
 
 
@@ -16,13 +17,40 @@ type ServiceTypeOption = {
   defaultPrice: number
 }
 
+type DiscountMode = "fixed" | "percent"
+
 type OrderItemDraft = {
   serviceTypeId: string
   quantity: number
   unitPrice: number
   discount: number
+  discountMode: DiscountMode
   length?: number
   width?: number
+}
+
+function lineSubtotal(item: Pick<OrderItemDraft, "quantity" | "unitPrice">) {
+  return Math.max(item.quantity * item.unitPrice, 0)
+}
+
+function discountAsRupiah(item: OrderItemDraft) {
+  const subtotal = lineSubtotal(item)
+  if (subtotal <= 0) return 0
+  if (item.discountMode === "percent") {
+    const pct = Math.max(0, item.discount)
+    return Math.min(subtotal * (pct / 100), subtotal)
+  }
+  return Math.min(Math.max(0, item.discount), subtotal)
+}
+
+function toApiPayloadItem(item: OrderItemDraft) {
+  const discount = Math.round(discountAsRupiah(item) * 100) / 100
+  return {
+    serviceTypeId: item.serviceTypeId,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    discount,
+  }
 }
 
 type OrderItemsFormProps = {
@@ -35,17 +63,21 @@ function formatIdr(value: number) {
 
 export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
   const [items, setItems] = useState<OrderItemDraft[]>([
-    { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0 },
+    { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0, discountMode: "fixed" },
   ])
 
   const total = useMemo(() => {
     return items.reduce((sum, item) => {
-      const lineTotal = item.quantity * item.unitPrice - item.discount
+      const d = discountAsRupiah(item)
+      const lineTotal = lineSubtotal(item) - d
       return sum + Math.max(lineTotal, 0)
     }, 0)
   }, [items])
 
-  const serialized = useMemo(() => JSON.stringify(items), [items])
+  const serialized = useMemo(
+    () => JSON.stringify(items.map(toApiPayloadItem)),
+    [items],
+  )
 
   const serviceTypeFetcher = useCallback(
     async (query: string): Promise<SearchableOption[]> => {
@@ -73,7 +105,10 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
           type="button"
           variant="secondary"
           onClick={() => {
-            setItems((prev) => [...prev, { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0 }])
+            setItems((prev) => [
+              ...prev,
+              { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0, discountMode: "fixed" },
+            ])
           }}
         >
           Tambah Baris
@@ -83,7 +118,7 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
       <div className="space-y-3">
         {items.map((item, index) => {
           const selected = serviceTypes.find((s) => s.id === item.serviceTypeId)
-          const lineTotal = Math.max(item.quantity * item.unitPrice - item.discount, 0)
+          const lineTotal = Math.max(lineSubtotal(item) - discountAsRupiah(item), 0)
           const rowKey = `${index}-${item.serviceTypeId}`
           const isM2 = selected?.unit === "m2"
           const isM1 = selected?.unit === "m1"
@@ -245,23 +280,50 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="md:col-span-6">
                   <Label htmlFor={`discount-${index}`}>Diskon</Label>
-                  <Input
-                    id={`discount-${index}`}
-                    type="number"
-                    min="0"
-                    value={item.discount}
-                    onFocus={(e) => {
-                      if (e.currentTarget.value === "0") {
-                        e.currentTarget.select()
-                      }
-                    }}
-                    onChange={(e) => {
-                      const value = Number(e.target.value || 0)
-                      setItems((prev) => prev.map((p, i) => (i === index ? { ...p, discount: value } : p)))
-                    }}
-                  />
+                  <div className="flex gap-2">
+                    <Select
+                      className="w-[4.75rem] shrink-0"
+                      aria-label="Satuan diskon"
+                      value={item.discountMode}
+                      onChange={(e) => {
+                        const mode = e.target.value as DiscountMode
+                        setItems((prev) =>
+                          prev.map((p, i) =>
+                            i === index ? { ...p, discountMode: mode, discount: 0 } : p,
+                          ),
+                        )
+                      }}
+                    >
+                      <option value="fixed">Rp</option>
+                      <option value="percent">%</option>
+                    </Select>
+                    <Input
+                      id={`discount-${index}`}
+                      className="min-w-0 flex-1 w-32"
+                      type="number"
+                      min="0"
+                      max={item.discountMode === "percent" ? "100" : undefined}
+                      step={item.discountMode === "percent" ? "0.01" : "1"}
+                      value={item.discount}
+                      onFocus={(e) => {
+                        if (e.currentTarget.value === "0") {
+                          e.currentTarget.select()
+                        }
+                      }}
+                      onChange={(e) => {
+                        const value = Number(e.target.value || 0)
+                        setItems((prev) => prev.map((p, i) => (i === index ? { ...p, discount: value } : p)))
+                      }}
+                    />
+                  </div>
+                  {item.discountMode === "percent" ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Persen dari subtotal baris (qty × harga). Setara ~Rp{" "}
+                      {formatIdr(Math.round(discountAsRupiah(item)))}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="md:col-span-1">

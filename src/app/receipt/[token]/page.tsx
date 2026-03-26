@@ -9,6 +9,25 @@ import { Button } from "@/components/ui/button"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 
+function lineGrossBeforeDiscount(quantity: number, unitPrice: number) {
+  return Math.max(quantity * unitPrice, 0)
+}
+
+/** Persen diskon terhadap harga asli baris; null jika tidak relevan. */
+function discountPercentOfGross(gross: number, discount: number): number | null {
+  if (gross <= 0 || discount <= 0) return null
+  const pct = (discount / gross) * 100
+  if (!Number.isFinite(pct)) return null
+  return Math.round(pct * 100) / 100
+}
+
+function formatPercentId(pct: number) {
+  return new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(pct)
+}
+
 type PublicReceipt = {
   publicToken: string
   invoiceNumber: string
@@ -123,22 +142,42 @@ export default async function ReceiptPage({ params }: { params: { token: string 
           ) : null}
         </div>
 
-        <div className="border-t pt-3">
-          <p className="mb-2 text-sm font-semibold">Item</p>
-          <div className="space-y-2 text-sm">
-            {receipt.items.map((it, idx) => (
-              <div key={`${it.serviceName}-${idx}`} className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{it.serviceName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {it.quantity} {it.unit} × {formatCurrency(Number(it.unitPrice))}
-                    {Number(it.discount) > 0 ? ` (-${formatCurrency(Number(it.discount))})` : ""}
-                  </p>
-                </div>
-                <p className="whitespace-nowrap font-medium">{formatCurrency(Number(it.total))}</p>
-              </div>
-            ))}
-          </div>
+        <div className="border-t pt-3 print:break-inside-avoid">
+          <p className="mb-3 text-sm font-semibold">Rincian item</p>
+          <ul className="space-y-0 divide-y divide-border rounded-lg border border-border text-sm">
+            {receipt.items.map((it, idx) => {
+              const qty = Number(it.quantity)
+              const unitPrice = Number(it.unitPrice)
+              const discount = Number(it.discount)
+              const gross = lineGrossBeforeDiscount(qty, unitPrice)
+              const pct = discountPercentOfGross(gross, discount)
+              const lineTotal = Number(it.total)
+              const qtyLabel = `${qty.toLocaleString("id-ID")} ${it.unit}`
+              return (
+                <li key={`${it.serviceName}-${idx}`} className="space-y-1.5 px-3 py-3">
+                  <p className="font-medium leading-snug text-foreground">{it.serviceName}</p>
+                  <div className="flex items-baseline justify-between gap-3 tabular-nums">
+                    <span className="min-w-0 text-muted-foreground">
+                      {qtyLabel} × {formatCurrency(unitPrice)}
+                    </span>
+                    <span className="shrink-0 text-right">{formatCurrency(gross)}</span>
+                  </div>
+                  {discount > 0 ? (
+                    <div className="flex items-baseline justify-between gap-3 pl-2 text-xs tabular-nums text-destructive sm:pl-3">
+                      <span>
+                        Diskon
+                        {pct != null ? ` (${formatPercentId(pct)}%)` : null}
+                      </span>
+                      <span className="shrink-0 text-right">−{formatCurrency(discount)}</span>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-end border-t border-dashed border-border pt-1.5 tabular-nums">
+                    <span className="font-semibold text-foreground">{formatCurrency(lineTotal)}</span>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
         </div>
 
         <div className="border-t pt-3 text-sm">

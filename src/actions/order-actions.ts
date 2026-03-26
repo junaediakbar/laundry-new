@@ -125,18 +125,29 @@ export async function createPaymentAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect('/orders');
+    const msg = parsed.error.issues[0]?.message ?? 'Data pembayaran tidak valid';
+    throw new Error(msg);
   }
 
-  await backendFetch(`/api/v1/orders/${parsed.data.orderId}/payments`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      amount: parsed.data.amount,
-      method: parsed.data.method,
-      note: parsed.data.note || null,
-    }),
-  }).catch(() => null);
+  try {
+    await backendFetch(`/api/v1/orders/${parsed.data.orderId}/payments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: parsed.data.amount,
+        method: parsed.data.method,
+        note: parsed.data.note || null,
+      }),
+    });
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      if (e.status === 401) {
+        throw new Error('Sesi habis. Silakan login ulang.');
+      }
+      throw new Error(e.message);
+    }
+    throw new Error('Gagal menyimpan pembayaran');
+  }
 
   revalidatePath(`/orders/${parsed.data.orderId}`);
   revalidatePath('/orders');
