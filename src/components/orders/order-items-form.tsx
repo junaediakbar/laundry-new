@@ -337,7 +337,7 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                       setItems((prev) => prev.filter((_, i) => i !== index))
                     }}
                   >
-                    <Trash2 className="w-10 h-10" />
+                    <Trash2 className="w-5 md:w-10 h-5 md:h-10" />
                   </Button>
                 </div>
               </div>

@@ -29,10 +29,16 @@ export async function createOrderAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect('/orders/new');
+    const msg =
+      parsed.error.issues[0]?.message ??
+      'Data nota tidak valid. Periksa item, qty, dan harga.';
+    redirect(`/orders/new?error=${encodeURIComponent(msg)}`);
   }
 
-  const file = formData.get('image');
+  const imageFiles = formData
+    .getAll('images')
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, 3);
   const upload = new FormData();
   upload.set('customerId', parsed.data.customerId);
   upload.set('receivedDate', parsed.data.receivedDate || '');
@@ -42,8 +48,8 @@ export async function createOrderAction(formData: FormData) {
     'items',
     typeof itemsRaw === 'string' ? itemsRaw : JSON.stringify(parsed.data.items),
   );
-  if (file instanceof File && file.size > 0) {
-    upload.set('image', file);
+  for (const file of imageFiles) {
+    upload.append('images', file);
   }
 
   try {
@@ -63,8 +69,8 @@ export async function createOrderAction(formData: FormData) {
           receivedDate: parsed.data.receivedDate || null,
           completedDate: parsed.data.completedDate || null,
           itemsCount: parsed.data.items.length,
-          hasImage: file instanceof File && file.size > 0,
-          imageBytes: file instanceof File ? file.size : 0,
+          hasImage: imageFiles.length > 0,
+          imageBytes: imageFiles.reduce((n, f) => n + f.size, 0),
         },
       });
       if (e.status === 401) redirect('/login?error=Silakan%20login%20ulang');

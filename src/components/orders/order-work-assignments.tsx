@@ -151,8 +151,9 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
                         try {
                           await upsertWorkAssignment(formData)
                           toast.success("Tersimpan")
-                        } catch {
-                          toast.error("Gagal menyimpan")
+                        } catch (e) {
+                          const msg = e instanceof Error && e.message.trim() ? e.message : "Gagal menyimpan"
+                          toast.error(msg)
                         }
                       })
                     }}
@@ -171,8 +172,9 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
                         try {
                           await upsertWorkAssignment(formData)
                           toast.success("Tersimpan")
-                        } catch {
-                          toast.error("Gagal menyimpan")
+                        } catch (e) {
+                          const msg = e instanceof Error && e.message.trim() ? e.message : "Gagal menyimpan"
+                          toast.error(msg)
                         }
                       })
                     }}
@@ -191,8 +193,9 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
                         try {
                           await upsertWorkAssignment(formData)
                           toast.success("Tersimpan")
-                        } catch {
-                          toast.error("Gagal menyimpan")
+                        } catch (e) {
+                          const msg = e instanceof Error && e.message.trim() ? e.message : "Gagal menyimpan"
+                          toast.error(msg)
                         }
                       })
                     }}

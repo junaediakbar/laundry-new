@@ -7,6 +7,7 @@ import { WhatsAppShareButton } from "@/components/shared/whatsapp-share-button"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { resolveOrderImageUrls } from "@/lib/order-images"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 
 function lineGrossBeforeDiscount(quantity: number, unitPrice: number) {
@@ -41,6 +42,7 @@ type PublicReceipt = {
   completedDate?: string | null
   pickupDate?: string | null
   image?: string | null
+  images?: string[] | null
   note?: string | null
   items: Array<{
     serviceName: string
@@ -77,12 +79,7 @@ export default async function ReceiptPage({ params }: { params: { token: string 
   }
 
   const backendBase = (process.env.BACKEND_BASE_URL || "http://localhost:8080").replace(/\/$/, "")
-  const imageUrl =
-    receipt.image && receipt.image.length > 0
-      ? receipt.image.startsWith("http://") || receipt.image.startsWith("https://")
-        ? receipt.image
-        : `${backendBase}${receipt.image.startsWith("/") ? "" : "/"}${receipt.image}`
-      : null
+  const imageUrls = resolveOrderImageUrls(backendBase, receipt.image, receipt.images)
 
   const total = Number(receipt.total)
   const paid = Number(receipt.paidAmount)
@@ -205,12 +202,16 @@ export default async function ReceiptPage({ params }: { params: { token: string 
           </div>
         </div>
 
-        {imageUrl ? (
+        {imageUrls.length > 0 ? (
           <div className="border-t pt-3">
             <p className="mb-2 text-sm font-semibold">Gambar</p>
-            <a href={imageUrl} target="_blank" rel="noreferrer" className="block">
-              <img src={imageUrl} alt="order image" className="max-h-80 w-full rounded-md border object-cover" />
-            </a>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {imageUrls.map((url) => (
+                <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
+                  <img src={url} alt="lampiran nota" className="max-h-80 w-full rounded-md border object-cover" />
+                </a>
+              ))}
+            </div>
           </div>
         ) : null}
 

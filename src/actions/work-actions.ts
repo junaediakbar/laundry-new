@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { backendFetch } from '@/lib/backend';
+import { BackendFetchError, backendFetch } from '@/lib/backend';
 
 type WorkTaskType =
   | 'pickup_fuel'
@@ -47,17 +47,26 @@ export async function upsertWorkAssignmentAction(formData: FormData) {
 
   const taskType = parseTaskType(taskTypeRaw);
   if (!orderId || !orderItemId || !taskType) {
-    return;
+    throw new Error('Data work assignment tidak valid');
   }
 
-  await backendFetch(
-    `/api/v1/orders/${orderId}/items/${orderItemId}/work-assignments/${taskType}`,
-    {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employeeId }),
-    },
-  ).catch(() => null);
+  try {
+    await backendFetch(
+      `/api/v1/orders/${orderId}/items/${orderItemId}/work-assignments/${taskType}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeId }),
+      },
+    );
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      if (e.status === 401) throw new Error('Sesi habis. Silakan login ulang.');
+      throw new Error(e.message);
+    }
+    if (e instanceof Error && e.message.trim()) throw new Error(e.message);
+    throw new Error('Gagal menyimpan performa karyawan');
+  }
 
   revalidatePath(`/orders/${orderId}`);
 }

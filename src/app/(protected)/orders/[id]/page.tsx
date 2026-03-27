@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { resolveOrderImageUrls } from "@/lib/order-images"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 
 const workflowOptions = ["received", "washing", "drying", "ironing", "finished", "picked_up"]
@@ -57,6 +58,7 @@ type OrderDetail = {
   completedDate: string | null
   pickupDate: string | null
   image?: string | null
+  images?: string[] | null
   items: OrderItemRow[]
   payments: PaymentRow[]
   attachments: Array<{ id: string; filePath: string; createdAt: string }>
@@ -106,12 +108,7 @@ export default async function OrderDetailPage({
 
   const orderId = order.id
   const backendBase = (process.env.BACKEND_BASE_URL || "http://localhost:8080").replace(/\/$/, "")
-  const orderImageUrl =
-    order.image && order.image.length > 0
-      ? order.image.startsWith("http://") || order.image.startsWith("https://")
-        ? order.image
-        : `${backendBase}${order.image.startsWith("/") ? "" : "/"}${order.image}`
-      : null
+  const orderImageUrls = resolveOrderImageUrls(backendBase, order.image, order.images)
   const paidAmount = order.payments.reduce(
     (sum: number, payment: { amount: string }) => sum + Number(payment.amount),
     0,
@@ -190,10 +187,14 @@ export default async function OrderDetailPage({
 
       <Card>
         <p className="text-sm text-muted-foreground">Gambar Nota</p>
-        {orderImageUrl ? (
-          <a href={orderImageUrl} target="_blank" rel="noreferrer" className="mt-2 block">
-            <img src={orderImageUrl} alt="order image" className="max-h-80 w-full rounded-md border object-cover" />
-          </a>
+        {orderImageUrls.length > 0 ? (
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {orderImageUrls.map((url) => (
+              <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
+                <img src={url} alt="lampiran nota" className="max-h-80 w-full rounded-md border object-cover" />
+              </a>
+            ))}
+          </div>
         ) : (
           <p className="mt-2 text-sm font-medium">-</p>
         )}

@@ -55,20 +55,20 @@ export default async function NewOrderPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="receivedDate">Tanggal Masuk</Label>
-              <Input id="receivedDate" name="receivedDate" type="date" />
+              <Label htmlFor="receivedDate">Tanggal &amp; jam masuk</Label>
+              <Input id="receivedDate" name="receivedDate" type="datetime-local" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="completedDate">Tanggal Selesai</Label>
-              <Input id="completedDate" name="completedDate" type="date" />
+              <Label htmlFor="completedDate">Tanggal &amp; jam selesai</Label>
+              <Input id="completedDate" name="completedDate" type="datetime-local" />
             </div>
           </div>
 
           <OrderItemsForm serviceTypes={serviceTypeOptions} />
 
           <div className="space-y-2">
-            <Label htmlFor="image">Gambar Nota (opsional)</Label>
-            <Input id="image" name="image" type="file" accept="image/*" />
+            <Label htmlFor="images">Gambar nota (opsional, maks. 3)</Label>
+            <Input id="images" name="images" type="file" accept="image/*" multiple />
           </div>
 
           <div className="space-y-2">

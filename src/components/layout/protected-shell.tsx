@@ -39,13 +39,13 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
             <Button
               type="button"
               variant="outline"
-              className="h-10 w-10 shrink-0 px-0 transition-transform hover:scale-105 active:scale-95"
+              className="h-10 w-10 shrink-0 px-0 m-2 transition-transform hover:scale-105 active:scale-95"
               onClick={() => setOpen(true)}
               aria-label="Buka menu"
             >
               <Menu className="h-4 w-4" />
             </Button>
-            <p className="text-sm font-semibold tracking-tight text-primary">Laundry Records</p>
+            <p className="text-sm font-semibold tracking-tight text-primary">Trees Laundry</p>
             <div className="h-10 w-10 shrink-0" aria-hidden />
           </header>
 
@@ -87,7 +87,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
             <Button
               type="button"
               variant="outline"
-              className="h-10 w-10 px-0"
+              className="h-10 w-10 px-0 my-2"
               onClick={() => setOpen(false)}
               aria-label="Tutup menu"
             >

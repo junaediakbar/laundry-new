@@ -52,7 +52,7 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
             <Droplets className="h-5 w-5" aria-hidden />
           </span>
           <div>
-            <p className="text-lg font-semibold leading-none tracking-tight">Laundry Records</p>
+            <p className="text-lg font-semibold leading-none tracking-tight">Trees Laundry</p>
             <p className="mt-1 text-xs text-muted-foreground">Manajemen operasional harian</p>
           </div>
         </div>

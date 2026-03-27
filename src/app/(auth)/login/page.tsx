@@ -35,7 +35,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
               <Droplets className="h-8 w-8" aria-hidden />
             </span>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">Laundry Records</h1>
+              <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">Trees Laundry</h1>
               <p className="mt-0.5 text-sm text-teal-50">Manajemen nota & pelanggan</p>
             </div>
           </div>
