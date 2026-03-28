@@ -74,6 +74,11 @@ export const paymentSchema = z.object({
   note: z.string().optional(),
 });
 
+export const deletePaymentSchema = z.object({
+  orderId: z.string().min(1),
+  paymentId: z.string().min(1),
+});
+
 export const reportFilterSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),

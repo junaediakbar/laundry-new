@@ -4,7 +4,11 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { BackendFetchError, backendFetch } from '@/lib/backend';
-import { orderSchema, paymentSchema } from '@/lib/validations';
+import {
+  deletePaymentSchema,
+  orderSchema,
+  paymentSchema,
+} from '@/lib/validations';
 
 export async function createOrderAction(formData: FormData) {
   const itemsRaw = formData.get('items');
@@ -131,7 +135,8 @@ export async function createPaymentAction(formData: FormData) {
   });
 
   if (!parsed.success) {
-    const msg = parsed.error.issues[0]?.message ?? 'Data pembayaran tidak valid';
+    const msg =
+      parsed.error.issues[0]?.message ?? 'Data pembayaran tidak valid';
     throw new Error(msg);
   }
 
@@ -159,6 +164,42 @@ export async function createPaymentAction(formData: FormData) {
   revalidatePath('/orders');
 }
 
+export async function deletePaymentAction(formData: FormData) {
+  const parsed = deletePaymentSchema.safeParse({
+    orderId: formData.get('orderId'),
+    paymentId: formData.get('paymentId'),
+  });
+
+  if (!parsed.success) {
+    throw new Error('Data pembayaran tidak valid');
+  }
+
+  try {
+    await backendFetch(
+      `/api/v1/orders/${parsed.data.orderId}/payments/${parsed.data.paymentId}`,
+      {
+        method: 'DELETE',
+      },
+    );
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      if (e.status === 401) {
+        throw new Error('Sesi habis. Silakan login ulang.');
+      }
+      if (e.status === 404 && /page not found/i.test(e.message)) {
+        throw new Error(
+          'Endpoint batalkan pembayaran belum tersedia di backend yang sedang berjalan. Restart backend (http://localhost:8080) dengan kode terbaru.',
+        );
+      }
+      throw new Error(e.message);
+    }
+    throw new Error('Gagal membatalkan pembayaran');
+  }
+
+  revalidatePath(`/orders/${parsed.data.orderId}`);
+  revalidatePath('/orders');
+}
+
 export async function deleteOrderAction(orderId: string) {
   try {
     await backendFetch<{ ok: boolean }>(`/api/v1/orders/${orderId}`, {
@@ -166,9 +207,7 @@ export async function deleteOrderAction(orderId: string) {
     });
   } catch (e) {
     if (e instanceof BackendFetchError) {
-      redirect(
-        `/orders/${orderId}?error=${encodeURIComponent(e.message)}`,
-      );
+      redirect(`/orders/${orderId}?error=${encodeURIComponent(e.message)}`);
     }
     redirect(
       `/orders/${orderId}?error=${encodeURIComponent('Gagal menghapus nota')}`,

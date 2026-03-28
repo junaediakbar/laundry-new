@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-import { createPaymentAction, updateWorkflowAction } from "@/actions/order-actions"
+import { createPaymentAction, deletePaymentAction, updateWorkflowAction } from "@/actions/order-actions"
 import { OrderDeleteButton } from "@/components/orders/order-delete-button"
 import { upsertWorkAssignmentAction } from "@/actions/work-actions"
 import { OrderDetailForms } from "@/components/orders/order-detail-forms"
@@ -109,11 +109,13 @@ export default async function OrderDetailPage({
   const orderId = order.id
   const backendBase = (process.env.BACKEND_BASE_URL || "http://localhost:8080").replace(/\/$/, "")
   const orderImageUrls = resolveOrderImageUrls(backendBase, order.image, order.images)
-  const paidAmount = order.payments.reduce(
-    (sum: number, payment: { amount: string }) => sum + Number(payment.amount),
-    0,
-  )
-  const remaining = Number(order.total) - paidAmount
+  const toCents = (value: string | number) => Math.round(Number(value) * 100)
+  const totalCents = toCents(order.total)
+  const paidCents = order.payments.reduce((sum: number, payment) => sum + toCents(payment.amount), 0)
+  const paidAmount = paidCents / 100
+  const remaining = Math.max((totalCents - paidCents) / 100, 0)
+  const paymentStatus =
+    totalCents <= 0 || paidCents >= totalCents ? "paid" : paidCents > 0 ? "partial" : "unpaid"
 
   async function updateWorkflow(formData: FormData) {
     "use server"
@@ -140,7 +142,7 @@ export default async function OrderDetailPage({
             </div>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <OrderDeleteButton orderId={orderId} />
-              <StatusBadge type="payment" value={order.paymentStatus} />
+              <StatusBadge type="payment" value={paymentStatus} />
               <StatusBadge type="workflow" value={order.workflowStatus} />
             </div>
           </div>
@@ -252,39 +254,9 @@ export default async function OrderDetailPage({
         workflowOptions={workflowOptions}
         updateWorkflow={updateWorkflow}
         createPayment={createPaymentAction}
+        deletePayment={deletePaymentAction}
+        payments={order.payments}
       />
-
-      <Card className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tanggal</TableHead>
-                <TableHead>Metode</TableHead>
-                <TableHead>Nominal</TableHead>
-                <TableHead>Catatan</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {order.payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell>{formatDate(payment.paidAt)}</TableCell>
-                  <TableCell className="capitalize">{payment.method}</TableCell>
-                  <TableCell>{formatCurrency(Number(payment.amount))}</TableCell>
-                  <TableCell>{payment.note ?? "-"}</TableCell>
-                </TableRow>
-              ))}
-              {order.payments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
-                    Belum ada pembayaran.
-                  </TableCell>
-                </TableRow>
-              ) : null}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
     </div>
   )
 }
