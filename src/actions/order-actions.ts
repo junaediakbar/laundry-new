@@ -10,6 +10,22 @@ import {
   paymentSchema,
 } from '@/lib/validations';
 
+function normalizeWitaDateTimeInput(value: string | undefined) {
+  const raw = (value ?? '').trim();
+  if (!raw) return '';
+  if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(raw)) return raw;
+
+  const m = raw.match(
+    /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::(\d{2}))?$/,
+  );
+  if (!m) return raw;
+
+  const ymd = m[1];
+  const hm = m[2];
+  const ss = m[3] ?? '00';
+  return `${ymd}T${hm}:${ss}+08:00`;
+}
+
 export async function createOrderAction(formData: FormData) {
   const itemsRaw = formData.get('items');
   const items =
@@ -43,10 +59,14 @@ export async function createOrderAction(formData: FormData) {
     .getAll('images')
     .filter((f): f is File => f instanceof File && f.size > 0)
     .slice(0, 3);
+
+  const receivedDate = normalizeWitaDateTimeInput(parsed.data.receivedDate);
+  const completedDate = normalizeWitaDateTimeInput(parsed.data.completedDate);
+
   const upload = new FormData();
   upload.set('customerId', parsed.data.customerId);
-  upload.set('receivedDate', parsed.data.receivedDate || '');
-  upload.set('completedDate', parsed.data.completedDate || '');
+  upload.set('receivedDate', receivedDate);
+  upload.set('completedDate', completedDate);
   upload.set('note', parsed.data.note || '');
   upload.set(
     'items',
@@ -70,8 +90,8 @@ export async function createOrderAction(formData: FormData) {
         details: e.details,
         payload: {
           customerId: parsed.data.customerId,
-          receivedDate: parsed.data.receivedDate || null,
-          completedDate: parsed.data.completedDate || null,
+          receivedDate: receivedDate || null,
+          completedDate: completedDate || null,
           itemsCount: parsed.data.items.length,
           hasImage: imageFiles.length > 0,
           imageBytes: imageFiles.reduce((n, f) => n + f.size, 0),
@@ -85,8 +105,8 @@ export async function createOrderAction(formData: FormData) {
         message: e.message,
         payload: {
           customerId: parsed.data.customerId,
-          receivedDate: parsed.data.receivedDate || null,
-          completedDate: parsed.data.completedDate || null,
+          receivedDate: receivedDate || null,
+          completedDate: completedDate || null,
           itemsCount: parsed.data.items.length,
         },
       });
