@@ -15,9 +15,7 @@ function normalizeWitaDateTimeInput(value: string | undefined) {
   if (!raw) return '';
   if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(raw)) return raw;
 
-  const m = raw.match(
-    /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::(\d{2}))?$/,
-  );
+  const m = raw.match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(?::(\d{2}))?$/);
   if (!m) return raw;
 
   const ymd = m[1];
@@ -130,6 +128,7 @@ export async function updateWorkflowAction(
     'drying',
     'ironing',
     'finished',
+    'delivered',
     'picked_up',
   ];
   if (!allowed.includes(workflowStatus)) {

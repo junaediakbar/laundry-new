@@ -19,6 +19,7 @@ const workflowMap: Record<string, string> = {
   drying: "bg-indigo-100 text-indigo-700",
   ironing: "bg-purple-100 text-purple-700",
   finished: "bg-zinc-900 text-white",
+  delivered: "bg-zinc-800 text-white",
   picked_up: "bg-emerald-100 text-emerald-700",
 }
 
@@ -28,6 +29,7 @@ const workflowLabels: Record<string, string> = {
   drying: "Sedang dikeringkan",
   ironing: "Sedang disetrika",
   finished: "Selesai diproses",
+  delivered: "Sudah diantar",
   picked_up: "Sudah diambil",
 }
 
