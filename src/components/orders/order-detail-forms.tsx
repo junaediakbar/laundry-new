@@ -57,8 +57,9 @@ export function OrderDetailForms({
                   await updateWorkflow(formData)
                   toast.success("Status berhasil disimpan")
                   router.refresh()
-                } catch {
-                  toast.error("Gagal menyimpan status")
+                } catch (e) {
+                  const msg = e instanceof Error && e.message.trim() ? e.message : "Gagal menyimpan status"
+                  toast.error(msg)
                 }
               })
             }}

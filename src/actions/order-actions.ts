@@ -135,11 +135,20 @@ export async function updateWorkflowAction(
     return;
   }
 
-  await backendFetch<{ ok: boolean }>(`/api/v1/orders/${orderId}/workflow`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workflowStatus }),
-  }).catch(() => null);
+  try {
+    await backendFetch<{ ok: boolean }>(
+      `/api/v1/orders/${orderId}/workflow?workflowStatus=${encodeURIComponent(workflowStatus)}`,
+      {
+        method: 'PATCH',
+      },
+    );
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      if (e.status === 401) redirect('/login?error=Silakan%20login%20ulang');
+      throw new Error(e.message);
+    }
+    throw new Error('Gagal mengubah status workflow');
+  }
 
   revalidatePath(`/orders/${orderId}`);
   revalidatePath('/orders');

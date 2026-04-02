@@ -30,9 +30,10 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
   if (endDate) qs.set("endDate", endDate)
   const query = qs.toString()
 
-  const rows = await backendFetch<Row[]>(
+  const rowsRaw = await backendFetch<Row[]>(
     `/api/v1/employees/performance${query ? `?${query}` : ""}`,
   ).catch(() => [])
+  const rows = Array.isArray(rowsRaw) ? rowsRaw : []
 
   const sorted = rows
     .map((r) => ({
