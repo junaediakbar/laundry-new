@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { resolveOrderImageUrls } from "@/lib/order-images"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
+import { workflowLabel, paymentLabel } from "@/components/shared/status-badge"
 
 function lineGrossBeforeDiscount(quantity: number, unitPrice: number) {
   return Math.max(quantity * unitPrice, 0)
@@ -193,11 +194,11 @@ export default async function ReceiptPage({ params }: { params: { token: string 
           <div className="mt-2 grid gap-1 text-xs text-muted-foreground">
             <div className="flex items-center justify-between gap-4">
               <span>Status pembayaran</span>
-              <span className="capitalize">{receipt.paymentStatus}</span>
+              <span>{paymentLabel(receipt.paymentStatus)}</span>
             </div>
             <div className="flex items-center justify-between gap-4">
               <span>Status workflow</span>
-              <span className="capitalize">{receipt.workflowStatus}</span>
+              <span>{workflowLabel(receipt.workflowStatus)}</span>
             </div>
           </div>
         </div>

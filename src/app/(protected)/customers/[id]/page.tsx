@@ -9,6 +9,7 @@ import { NavigateButton } from "@/components/shared/navigate-button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { backendFetch } from "@/lib/backend"
+import { workflowLabel } from "@/components/shared/status-badge"
 
 export default async function CustomerDetailPage({
   params,
@@ -114,7 +115,7 @@ export default async function CustomerDetailPage({
                     <NavigateButton href={`/orders/${order.id}`} label={order.invoiceNumber} variant="secondary" />
                   </TableCell>
                   <TableCell>{Number(order.total).toLocaleString("id-ID")}</TableCell>
-                  <TableCell className="capitalize">{order.workflowStatus.replace("_", " ")}</TableCell>
+                  <TableCell>{workflowLabel(order.workflowStatus)}</TableCell>
                 </TableRow>
               ))}
               {safeOrders.length === 0 ? (

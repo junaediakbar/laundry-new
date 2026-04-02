@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { workflowLabel } from "@/components/shared/status-badge"
 
 type PaymentRow = {
   id: string
@@ -67,7 +68,7 @@ export function OrderDetailForms({
             <Select name="workflowStatus" defaultValue={workflowStatus} disabled={savingStatus}>
               {workflowOptions.map((workflow) => (
                 <option key={workflow} value={workflow}>
-                  {workflow}
+                  {workflowLabel(workflow)}
                 </option>
               ))}
             </Select>

@@ -7,13 +7,28 @@ const paymentMap: Record<string, string> = {
   paid: "bg-green-100 text-green-700",
 }
 
+const paymentLabels: Record<string, string> = {
+  unpaid: "Belum lunas",
+  partial: "Sebagian",
+  paid: "Lunas",
+}
+
 const workflowMap: Record<string, string> = {
   received: "bg-slate-100 text-slate-700",
   washing: "bg-blue-100 text-blue-700",
   drying: "bg-indigo-100 text-indigo-700",
   ironing: "bg-purple-100 text-purple-700",
-  finished: "bg-emerald-100 text-emerald-700",
-  picked_up: "bg-zinc-800 text-white",
+  finished: "bg-zinc-900 text-white",
+  picked_up: "bg-emerald-100 text-emerald-700",
+}
+
+const workflowLabels: Record<string, string> = {
+  received: "Diterima",
+  washing: "Sedang dicuci",
+  drying: "Sedang dikeringkan",
+  ironing: "Sedang disetrika",
+  finished: "Selesai diproses",
+  picked_up: "Sudah diambil",
 }
 
 type StatusBadgeProps = {
@@ -21,11 +36,19 @@ type StatusBadgeProps = {
   value: string
 }
 
+export function workflowLabel(value: string) {
+  return workflowLabels[value] ?? value
+}
+
+export function paymentLabel(value: string) {
+  return paymentLabels[value] ?? value
+}
+
 export function StatusBadge({ type, value }: StatusBadgeProps) {
   const styles = type === "payment" ? paymentMap[value] : workflowMap[value]
   return (
     <Badge className={cn("border-0 px-2 py-1", styles)} variant="secondary">
-      {value}
+      {type === "payment" ? paymentLabel(value) : workflowLabel(value)}
     </Badge>
   )
 }

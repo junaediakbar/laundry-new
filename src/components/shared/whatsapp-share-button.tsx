@@ -4,6 +4,7 @@ import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { paymentLabel, workflowLabel } from "@/components/shared/status-badge"
 import { Share2 } from "lucide-react"
 
 type WhatsAppItem = {
@@ -51,8 +52,8 @@ function buildMessage(p: WhatsAppShareButtonProps, link: string) {
     `Total: ${formatCurrency(total)}`,
     `Dibayar: ${formatCurrency(paid)}`,
     `Sisa: ${formatCurrency(remaining)}`,
-    `Status pembayaran: ${p.paymentStatus}`,
-    `Status workflow: ${p.workflowStatus}`,
+    `Status pembayaran: ${paymentLabel(p.paymentStatus)}`,
+    `Status workflow: ${workflowLabel(p.workflowStatus)}`,
     ``,
     `Link struk: ${link}`,
   ]
