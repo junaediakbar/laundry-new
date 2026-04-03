@@ -1,29 +1,81 @@
 import { AlertCircle, ReceiptText, TrendingUp, Users } from "lucide-react"
 
+import { RevenueChart } from "@/components/dashboard/revenue-chart"
 import { PageHeader } from "@/components/shared/page-header"
+import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { backendFetch } from "@/lib/backend"
 import { formatCurrency } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  searchParams?: {
+    month?: string
+  }
+}
+
+const DASHBOARD_TZ = "Asia/Makassar"
+
+function ymdForTz(d: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d)
+}
+
+function currentMonthYmdRange(timeZone: string) {
+  const todayYmd = ymdForTz(new Date(), timeZone)
+  const y = Number(todayYmd.slice(0, 4))
+  const m = Number(todayYmd.slice(5, 7))
+  const start = `${todayYmd.slice(0, 8)}01`
+  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate()
+  const end = `${todayYmd.slice(0, 8)}${String(lastDay).padStart(2, "0")}`
+  return { start, end, month: `${todayYmd.slice(0, 7)}` }
+}
+
+function monthYmdRange(month: string) {
+  const m = month.trim()
+  const ok = /^\d{4}-\d{2}$/.test(m)
+  if (!ok) return null
+  const y = Number(m.slice(0, 4))
+  const mo = Number(m.slice(5, 7))
+  const lastDay = new Date(Date.UTC(y, mo, 0)).getUTCDate()
+  return { start: `${m}-01`, end: `${m}-${String(lastDay).padStart(2, "0")}`, month: m }
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const thisRange = currentMonthYmdRange(DASHBOARD_TZ)
+  const selectedMonth = (searchParams?.month ?? "").trim()
+  const chosen = monthYmdRange(selectedMonth) ?? thisRange
+
   const summary = await backendFetch<{
     customerCount: number
     orderCount: number
     unpaidCount: number
     totalRevenue: string
-  }>("/api/v1/dashboard/summary").catch(() => ({
+  }>(`/api/v1/dashboard/summary?startDate=${encodeURIComponent(chosen.start)}&endDate=${encodeURIComponent(chosen.end)}`).catch(() => ({
     customerCount: 0,
     orderCount: 0,
     unpaidCount: 0,
     totalRevenue: "0",
   }))
 
+  const series = await backendFetch<Array<{ date: string; orderCount: number; revenue: string }>>(
+    `/api/v1/dashboard/revenue-series?startDate=${encodeURIComponent(chosen.start)}&endDate=${encodeURIComponent(chosen.end)}`,
+  ).catch(() => [])
+  const chartData = (Array.isArray(series) ? series : []).map((p) => ({
+    date: p.date,
+    orderCount: Number(p.orderCount ?? 0),
+    revenue: Number(p.revenue ?? 0),
+  }))
+
   const totalRevenue = Number(summary.totalRevenue ?? 0)
 
   const cards = [
     {
-      title: "Total Pelanggan",
+      title: "Pelanggan Baru",
       value: `${summary.customerCount}`,
       icon: Users,
       accent: "from-teal-500/15 to-cyan-500/10",
@@ -58,6 +110,26 @@ export default async function DashboardPage() {
         title="Dashboard"
         description="Ringkasan operasional laundry — pantau pelanggan, nota, dan pembayaran dalam satu layar."
       />
+
+      <Card className="mb-4">
+        <form method="get" action="/dashboard" className="flex gap-3">
+          <div className="w-full">
+            <input
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              type="month"
+              name="month"
+              defaultValue={chosen.month}
+            />
+          </div>
+          <div className="flex items-end gap-2">
+            <Button type="submit">Terapkan</Button>
+          </div>
+        </form>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Rentang: {chosen.start} s/d {chosen.end} (WITA)
+        </p>
+      </Card>
+
       <div
         className={cn(
           "grid gap-4 sm:grid-cols-2",
@@ -101,6 +173,20 @@ export default async function DashboardPage() {
           )
         })}
       </div>
+
+      <Card className="mt-4">
+        <p className="text-sm font-medium">Grafik pendapatan & nota</p>
+        <p className="mt-1 text-xs text-muted-foreground">Per hari (berdasarkan tanggal pembayaran dan tanggal nota).</p>
+        <div className="mt-4">
+          {chartData.length > 0 ? (
+            <RevenueChart data={chartData} />
+          ) : (
+            <div className="flex h-72 items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
+              Belum ada data pada bulan ini.
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   )
 }
