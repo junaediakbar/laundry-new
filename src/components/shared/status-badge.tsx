@@ -25,10 +25,10 @@ const workflowMap: Record<string, string> = {
 
 const workflowLabels: Record<string, string> = {
   received: "Diterima",
-  washing: "Sedang dicuci",
-  drying: "Sedang dikeringkan",
-  ironing: "Sedang disetrika",
-  finished: "Selesai diproses",
+  washing: "Sudah dirontok",
+  drying: "Sudah dijemur",
+  ironing: "Sudah finishing",
+  finished: "Sudah packing",
   delivered: "Sudah diantar",
   picked_up: "Sudah diambil",
 }
