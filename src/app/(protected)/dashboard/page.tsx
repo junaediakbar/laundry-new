@@ -62,12 +62,15 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     totalRevenue: "0",
   }))
 
-  const series = await backendFetch<Array<{ date: string; orderCount: number; revenue: string }>>(
-    `/api/v1/dashboard/revenue-series?startDate=${encodeURIComponent(chosen.start)}&endDate=${encodeURIComponent(chosen.end)}`,
-  ).catch(() => [])
+  const series = await backendFetch<
+    Array<{ date: string; orderCount: number; notaTotal: string; revenue: string }>
+  >(`/api/v1/dashboard/revenue-series?startDate=${encodeURIComponent(chosen.start)}&endDate=${encodeURIComponent(chosen.end)}`).catch(
+    () => [],
+  )
   const chartData = (Array.isArray(series) ? series : []).map((p) => ({
     date: p.date,
     orderCount: Number(p.orderCount ?? 0),
+    notaTotal: Number(p.notaTotal ?? 0),
     revenue: Number(p.revenue ?? 0),
   }))
 
@@ -176,7 +179,9 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
       <Card className="mt-4">
         <p className="text-sm font-medium">Grafik pendapatan & nota</p>
-        <p className="mt-1 text-xs text-muted-foreground">Per hari (berdasarkan tanggal pembayaran dan tanggal nota).</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Pendapatan mengikuti tanggal bayar. Jumlah & nilai nota mengikuti tanggal nota masuk; nilai nota memakai total di nota sehingga tetap terhitung meski belum lunas.
+        </p>
         <div className="mt-4">
           {chartData.length > 0 ? (
             <RevenueChart data={chartData} />

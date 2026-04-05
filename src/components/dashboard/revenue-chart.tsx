@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils"
 export type DashboardChartPoint = {
   date: string
   orderCount: number
+  /** Total nominal nota per hari (SUM order.total); termasuk belum/parsial/lunas */
+  notaTotal: number
   revenue: number
 }
 
@@ -59,16 +61,22 @@ function ChartTooltip({
   if (!active || !payload || payload.length === 0) return null
 
   const rows = payload
-    .filter((p) => p && (p.name === "revenue" || p.name === "orderCount"))
-    .map((p) => ({
-      key: p.name ?? "",
-      label: p.name === "revenue" ? "Pendapatan" : "Nota",
-      value:
-        p.name === "revenue"
-          ? formatCurrency(Number(p.value ?? 0))
-          : String(Number(p.value ?? 0)),
-      color: p.color ?? "",
-    }))
+    .filter((p) => p && (p.name === "revenue" || p.name === "notaTotal" || p.name === "orderCount"))
+    .map((p) => {
+      const name = p.name ?? ""
+      let label = "Nota (jumlah)"
+      let value: string
+      if (name === "revenue") {
+        label = "Pendapatan (bayar)"
+        value = formatCurrency(Number(p.value ?? 0))
+      } else if (name === "notaTotal") {
+        label = "Nilai nota (semua status bayar)"
+        value = formatCurrency(Number(p.value ?? 0))
+      } else {
+        value = String(Number(p.value ?? 0))
+      }
+      return { key: name, label, value, color: p.color ?? "" }
+    })
 
   return (
     <div className="min-w-[180px] rounded-lg border border-border/80 bg-card p-3 text-card-foreground shadow-md">
@@ -92,9 +100,11 @@ function ChartTooltip({
 
 export function RevenueChart({ data }: { data: DashboardChartPoint[] }) {
   const totalRevenue = data.reduce((sum, d) => sum + (Number.isFinite(d.revenue) ? d.revenue : 0), 0)
+  const totalNotaValue = data.reduce((sum, d) => sum + (Number.isFinite(d.notaTotal) ? d.notaTotal : 0), 0)
   const totalOrders = data.reduce((sum, d) => sum + (Number.isFinite(d.orderCount) ? d.orderCount : 0), 0)
 
   const revenueColor = "hsl(var(--primary))"
+  const notaValueColor = "hsl(262 83% 58%)"
   const ordersColor = "hsl(var(--foreground) / 0.55)"
 
   return (
@@ -105,12 +115,19 @@ export function RevenueChart({ data }: { data: DashboardChartPoint[] }) {
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: revenueColor }} />
             Pendapatan: {formatCurrency(totalRevenue)}
           </Badge>
+          <Badge variant="secondary" className="gap-2" title="Jumlah nominal semua nota di rentang ini, termasuk yang belum lunas.">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: notaValueColor }} />
+            Nilai nota (termasuk belum lunas): {formatCurrency(totalNotaValue)}
+          </Badge>
           <Badge variant="secondary" className="gap-2">
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ordersColor }} />
-            Nota: {new Intl.NumberFormat("id-ID").format(totalOrders)}
+            Jumlah nota: {new Intl.NumberFormat("id-ID").format(totalOrders)}
           </Badge>
         </div>
       </div>
+      <p className="mb-3 text-xs text-muted-foreground">
+        Garis nilai nota memakai total di nota (bukan pembayaran), sehingga tetap terhitung walau belum dibayar.
+      </p>
 
       <div className={cn("h-72 w-full rounded-lg border border-border/60 bg-gradient-to-b from-background to-muted/20 p-2")}>
         <ResponsiveContainer width="100%" height="100%">
@@ -147,11 +164,29 @@ export function RevenueChart({ data }: { data: DashboardChartPoint[] }) {
             <Bar
               yAxisId="revenue"
               dataKey="revenue"
+              name="revenue"
               fill={revenueColor}
               radius={[2, 2, 0, 0]}
               style={{ filter: "none" }}
             />
-            <Line yAxisId="orders" type="monotone" dataKey="orderCount" stroke={ordersColor} strokeWidth={2} dot={false} />
+            <Line
+              yAxisId="revenue"
+              type="monotone"
+              dataKey="notaTotal"
+              name="notaTotal"
+              stroke={notaValueColor}
+              strokeWidth={2}
+              dot={false}
+            />
+            <Line
+              yAxisId="orders"
+              type="monotone"
+              dataKey="orderCount"
+              name="orderCount"
+              stroke={ordersColor}
+              strokeWidth={2}
+              dot={false}
+            />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
