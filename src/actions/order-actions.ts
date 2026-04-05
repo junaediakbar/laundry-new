@@ -124,12 +124,16 @@ export async function updateWorkflowAction(
 ) {
   const allowed = [
     'received',
+    'rontok_done',
+    'jemur_done',
+    'downy_done',
+    'packing_done',
+    'delivered',
+    'picked_up',
     'washing',
     'drying',
     'ironing',
     'finished',
-    'delivered',
-    'picked_up',
   ];
   if (!allowed.includes(workflowStatus)) {
     return;

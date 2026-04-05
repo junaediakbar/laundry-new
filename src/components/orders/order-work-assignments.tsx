@@ -44,7 +44,65 @@ type TaskDef = { key: string; label: string; percent: number }
 type TaskGroupDef = { id: string; title: string; tasks: TaskDef[] }
 type WorkTemplate = { groups: TaskGroupDef[] }
 
-const STORAGE_KEY = "work_task_templates_v1"
+/** v2: template per jenis layanan; v1 dihapus setelah migrasi */
+const STORAGE_KEY = "work_task_templates_v2"
+const STORAGE_KEY_LEGACY = "work_task_templates_v1"
+/** Diset sekali setelah penyelarasan persentase upah (DB + nilai kanonikal) */
+const WAGE_PERCENT_SYNC_FLAG = "work_template_wage_pct_sync_v1"
+
+/** Nilai standar upah per task_type — disamakan dengan backend `taskPercent` & template default */
+const CANONICAL_WAGE_PERCENT_BY_TASK_KEY: Record<string, number> = {
+  pickup_antar_jemput: 7.5,
+  pickup_driver: 3,
+  pickup_buruh_1: 1.5,
+  pickup_buruh_2: 0,
+  pickup_bensin: 3,
+  pickup_worker_1: 1.5,
+  pickup_worker_2: 0,
+  pickup_fuel: 3,
+  dropoff_antar_jemput: 7.5,
+  dropoff_driver: 3,
+  dropoff_buruh_1: 1.5,
+  dropoff_buruh_2: 0,
+  dropoff_bensin: 3,
+  dropoff_worker_1: 1.5,
+  dropoff_worker_2: 0,
+  dropoff_fuel: 3,
+  rontok: 4,
+  dust_removal: 4,
+  sikat: 5,
+  brushing: 5,
+  bilas: 6,
+  rinse_sprayer: 6,
+  jemur: 8,
+  spin_dry: 8,
+  spin_dry_1: 8,
+  spin_dry_2: 8,
+  downy: 2,
+  rumbai: 2,
+  finishing_1: 3,
+  finishing_2: 3,
+  finishing_packing: 3,
+}
+
+function applyCanonicalPercentsToStoredTemplates(
+  templates: Record<string, WorkTemplate>,
+): Record<string, WorkTemplate> {
+  const out: Record<string, WorkTemplate> = {}
+  for (const [serviceKey, tpl] of Object.entries(templates)) {
+    out[serviceKey] = {
+      groups: tpl.groups.map((g) => ({
+        ...g,
+        tasks: g.tasks.map((t) => {
+          const pct = CANONICAL_WAGE_PERCENT_BY_TASK_KEY[t.key]
+          if (pct == null) return t
+          return { ...t, percent: pct }
+        }),
+      })),
+    }
+  }
+  return out
+}
 
 function normalizeServiceName(value: string) {
   return value.trim().toLowerCase()
@@ -76,33 +134,33 @@ function defaultTemplateBase(): WorkTemplate {
         id: "pickup",
         title: "Jemput",
         tasks: [
-          { key: "pickup_driver", label: "Driver", percent: 2 },
-          { key: "pickup_worker_1", label: "Buruh 1", percent: 1.5 },
-          { key: "pickup_worker_2", label: "Buruh 2", percent: 1.5 },
-          { key: "pickup_fuel", label: "Bensin", percent: 2.5 },
+          { key: "pickup_driver", label: "Driver", percent: 3 },
+          { key: "pickup_buruh_1", label: "Buruh 1", percent: 1.5 },
+          { key: "pickup_buruh_2", label: "Buruh 2", percent: 0 },
+          { key: "pickup_bensin", label: "Bensin", percent: 3 },
         ],
       },
       {
         id: "dropoff",
         title: "Antar",
         tasks: [
-          { key: "dropoff_driver", label: "Driver", percent: 2 },
-          { key: "dropoff_worker_1", label: "Buruh 1", percent: 1.5 },
-          { key: "dropoff_worker_2", label: "Buruh 2", percent: 1.5 },
-          { key: "dropoff_fuel", label: "Bensin", percent: 2.5 },
+          { key: "dropoff_driver", label: "Driver", percent: 3 },
+          { key: "dropoff_buruh_1", label: "Buruh 1", percent: 1.5 },
+          { key: "dropoff_buruh_2", label: "Buruh 2", percent: 0 },
+          { key: "dropoff_bensin", label: "Bensin", percent: 3 },
         ],
       },
       {
         id: "work",
         title: "Produksi",
         tasks: [
-          { key: "dust_removal", label: "Rontok", percent: 4 },
-          { key: "brushing", label: "Sikat", percent: 4 },
-          { key: "rinse_sprayer", label: "Bilas", percent: 4 },
-          { key: "spin_dry_1", label: "Spin & Jemur 1", percent: 2.5 },
-          { key: "spin_dry_2", label: "Spin & Jemur 2", percent: 2.5 },
-          { key: "finishing_1", label: "Finishing 1", percent: 4 },
-          { key: "finishing_2", label: "Finishing 2", percent: 4 },
+          { key: "rontok", label: "Rontok (opsional)", percent: 4 },
+          { key: "sikat", label: "Sikat", percent: 5 },
+          { key: "bilas", label: "Bilas", percent: 6 },
+          { key: "downy", label: "Downy", percent: 2 },
+          { key: "rumbai", label: "Rumbai (opsional)", percent: 2 },
+          { key: "finishing_1", label: "Finishing 1", percent: 3 },
+          { key: "finishing_2", label: "Finishing 2", percent: 3 },
         ],
       },
     ],
@@ -110,43 +168,7 @@ function defaultTemplateBase(): WorkTemplate {
 }
 
 function defaultTemplateCuciKarpet(): WorkTemplate {
-  return {
-    groups: [
-      {
-        id: "pickup",
-        title: "Jemput",
-        tasks: [
-          { key: "pickup_driver", label: "Driver", percent: 2 },
-          { key: "pickup_worker_1", label: "Buruh 1", percent: 1.5 },
-          { key: "pickup_worker_2", label: "Buruh 2", percent: 1.5 },
-          { key: "pickup_fuel", label: "Bensin", percent: 2.5 },
-        ],
-      },
-      {
-        id: "dropoff",
-        title: "Antar",
-        tasks: [
-          { key: "dropoff_driver", label: "Driver", percent: 2 },
-          { key: "dropoff_worker_1", label: "Buruh 1", percent: 1.5 },
-          { key: "dropoff_worker_2", label: "Buruh 2", percent: 1.5 },
-          { key: "dropoff_fuel", label: "Bensin", percent: 2.5 },
-        ],
-      },
-      {
-        id: "work",
-        title: "Produksi",
-        tasks: [
-          { key: "dust_removal", label: "Rontok", percent: 4 },
-          { key: "brushing", label: "Sikat", percent: 4 },
-          { key: "rinse_sprayer", label: "Bilas", percent: 4 },
-          { key: "spin_dry_1", label: "Spin & Jemur 1", percent: 2.5 },
-          { key: "spin_dry_2", label: "Spin & Jemur 2", percent: 2.5 },
-          { key: "finishing_1", label: "Finishing 1", percent: 4 },
-          { key: "finishing_2", label: "Finishing 2", percent: 4 },
-        ],
-      },
-    ],
-  }
+  return defaultTemplateBase()
 }
 
 function defaultTemplateForService(serviceName: string): WorkTemplate {
@@ -168,11 +190,39 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
   useEffect(() => {
     const loaded = (() => {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY)
-        if (!raw) return {}
-        const parsed = JSON.parse(raw) as unknown
-        if (!parsed || typeof parsed !== "object") return {}
-        return parsed as Record<string, WorkTemplate>
+        let stored: Record<string, WorkTemplate> = {}
+        const v2Raw = localStorage.getItem(STORAGE_KEY)
+        const v1Raw = localStorage.getItem(STORAGE_KEY_LEGACY)
+        if (v2Raw) {
+          const parsed = JSON.parse(v2Raw) as unknown
+          if (parsed && typeof parsed === "object") stored = parsed as Record<string, WorkTemplate>
+          try {
+            if (v1Raw) localStorage.removeItem(STORAGE_KEY_LEGACY)
+          } catch {
+            /* ignore */
+          }
+        } else if (v1Raw) {
+          const parsed = JSON.parse(v1Raw) as unknown
+          if (parsed && typeof parsed === "object") stored = parsed as Record<string, WorkTemplate>
+          try {
+            localStorage.removeItem(STORAGE_KEY_LEGACY)
+          } catch {
+            /* ignore */
+          }
+        }
+
+        const synced = localStorage.getItem(WAGE_PERCENT_SYNC_FLAG)
+        if (!synced) {
+          const aligned = applyCanonicalPercentsToStoredTemplates(stored)
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(aligned))
+            localStorage.setItem(WAGE_PERCENT_SYNC_FLAG, "1")
+          } catch {
+            /* ignore quota */
+          }
+          return aligned
+        }
+        return stored
       } catch {
         return {}
       }
@@ -224,7 +274,7 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
             label: String(t.label).trim() || String(t.key).trim(),
             percent: Number(t.percent),
           }))
-          .filter((t) => t.key && t.label && Number.isFinite(t.percent) && t.percent > 0),
+          .filter((t) => t.key && t.label && Number.isFinite(t.percent) && t.percent >= 0),
       })),
     }
 

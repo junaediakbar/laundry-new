@@ -16,7 +16,15 @@ import { formatCurrency, formatDate } from "@/lib/format"
 import { resolveOrderImageUrls } from "@/lib/order-images"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 
-const workflowOptions = ["received", "washing", "drying", "ironing", "finished", "delivered", "picked_up"]
+const workflowOptions = [
+  "received",
+  "rontok_done",
+  "jemur_done",
+  "downy_done",
+  "packing_done",
+  "delivered",
+  "picked_up",
+]
 
 type EmployeeOption = { id: string; name: string }
 
