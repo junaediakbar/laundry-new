@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { workflowLabel } from "@/components/shared/status-badge"
+import { paymentMethodLabel } from "@/lib/payment-method"
 
 type PaymentRow = {
   id: string
@@ -106,7 +107,11 @@ export function OrderDetailForms({
             </div>
             <div className="space-y-2">
               <Label htmlFor="method">Metode</Label>
-              <Input id="method" name="method" placeholder="cash / transfer / qris" required disabled={savingPayment} />
+              <Select id="method" name="method" defaultValue="cash" required disabled={savingPayment}>
+                <option value="cash">{paymentMethodLabel("cash")}</option>
+                <option value="qris">{paymentMethodLabel("qris")}</option>
+                <option value="lainnya">{paymentMethodLabel("lainnya")}</option>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="note">Catatan</Label>
@@ -124,7 +129,7 @@ export function OrderDetailForms({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tanggal</TableHead>
+                <TableHead className="whitespace-nowrap">Tanggal bayar (WITA)</TableHead>
                 <TableHead>Metode</TableHead>
                 <TableHead>Nominal</TableHead>
                 <TableHead>Catatan</TableHead>
@@ -135,7 +140,7 @@ export function OrderDetailForms({
               {payments.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>{formatDate(p.paidAt)}</TableCell>
-                  <TableCell className="capitalize">{p.method}</TableCell>
+                  <TableCell>{paymentMethodLabel(p.method)}</TableCell>
                   <TableCell>{formatCurrency(Number(p.amount))}</TableCell>
                   <TableCell>{p.note ?? "-"}</TableCell>
                   <TableCell className="text-right">

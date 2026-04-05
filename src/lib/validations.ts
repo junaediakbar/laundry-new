@@ -70,7 +70,7 @@ export const orderSchema = z.object({
 export const paymentSchema = z.object({
   orderId: z.string().min(1),
   amount: z.coerce.number().positive('Nominal pembayaran wajib diisi'),
-  method: z.string().min(2, 'Metode wajib diisi'),
+  method: z.enum(['cash', 'qris', 'lainnya'], { message: 'Pilih metode pembayaran' }),
   note: z.string().optional(),
 });
 

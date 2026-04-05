@@ -117,13 +117,13 @@ export default async function OrderDetailPage({
   const orderId = order.id
   const backendBase = (process.env.BACKEND_BASE_URL || "http://localhost:8080").replace(/\/$/, "")
   const orderImageUrls = resolveOrderImageUrls(backendBase, order.image, order.images)
-  const toCents = (value: string | number) => Math.round(Number(value) * 100)
-  const totalCents = toCents(order.total)
-  const paidCents = order.payments.reduce((sum: number, payment) => sum + toCents(payment.amount), 0)
-  const paidAmount = paidCents / 100
-  const remaining = Math.max((totalCents - paidCents) / 100, 0)
+  /** Selaraskan dengan backend: ROUND(SUM(amount),0) >= ROUND(total,0) */
+  const totalIdr = Math.round(Number(order.total))
+  const paidIdr = Math.round(order.payments.reduce((s, p) => s + Number(p.amount), 0))
+  const paidAmount = order.payments.reduce((sum: number, payment) => sum + Number(payment.amount), 0)
+  const remaining = Math.max(totalIdr - paidIdr, 0)
   const paymentStatus =
-    totalCents <= 0 || paidCents >= totalCents ? "paid" : paidCents > 0 ? "partial" : "unpaid"
+    totalIdr <= 0 || paidIdr >= totalIdr ? "paid" : paidIdr > 0 ? "partial" : "unpaid"
 
   async function updateWorkflow(formData: FormData) {
     "use server"

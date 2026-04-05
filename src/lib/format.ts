@@ -37,6 +37,7 @@ function toDateAssumeWita(value: Date | string): Date {
   return new Date(raw);
 }
 
+/** Tanggal & jam dalam zona Asia/Makassar (WITA), untuk nota/pembayaran konsisten di seluruh app. */
 export function formatDate(value: Date | string) {
   const date = toDateAssumeWita(value);
   if (Number.isNaN(date.getTime())) return '-';
