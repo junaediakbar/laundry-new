@@ -30,17 +30,20 @@ function formatCompactNumber(value: number) {
   }).format(value)
 }
 
-function parseYmdToDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
-  const d = new Date(`${value}T00:00:00+08:00`)
-  if (Number.isNaN(d.getTime())) return null
-  return d
-}
+/** Backend mengirim YYYY-MM-DD = hari kalender bisnis WITA; label harus sama di zona Asia/Makassar, bukan zona browser. */
+const CHART_BUSINESS_TZ = "Asia/Makassar"
 
 function formatDayLabel(ymd: string) {
-  const d = parseYmdToDate(ymd)
-  if (!d) return ymd
-  return new Intl.DateTimeFormat("id-ID", { day: "2-digit", month: "short" }).format(d)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd
+  const [y, mo, d] = ymd.split("-").map((s) => parseInt(s, 10))
+  if (![y, mo, d].every((n) => Number.isFinite(n))) return ymd
+  // Anchor tengah hari UTC untuk tanggal kalender agar tidak bergeser saat diformat ke WITA
+  const anchor = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0))
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    timeZone: CHART_BUSINESS_TZ,
+  }).format(anchor)
 }
 
 type TooltipDatum = {
