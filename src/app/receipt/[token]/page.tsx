@@ -101,10 +101,13 @@ export default async function ReceiptPage({ params }: { params: { token: string 
               customerName={receipt.customerName}
               customerPhone={receipt.customerPhone ?? null}
               receivedDate={receipt.receivedDate}
+              completedDate={receipt.completedDate ?? null}
               items={receipt.items.map((it) => ({
                 serviceName: it.serviceName,
                 unit: it.unit,
                 quantity: it.quantity,
+                unitPrice: it.unitPrice,
+                discount: it.discount,
                 total: it.total,
               }))}
               total={receipt.total}
