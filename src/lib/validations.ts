@@ -61,7 +61,14 @@ export const orderSchema = z.object({
           .number()
           .nonnegative('Diskon tidak boleh negatif')
           .default(0),
-      }),
+        lengthM: z.coerce.number().positive().optional(),
+        widthM: z.coerce.number().positive().optional(),
+      }).refine(
+        (row) =>
+          (row.lengthM === undefined && row.widthM === undefined) ||
+          (row.lengthM !== undefined && row.widthM !== undefined),
+        { message: 'Panjang dan lebar karpet harus diisi bersamaan' },
+      ),
     )
     .min(1, 'Minimal 1 item pesanan'),
   note: z.string().optional(),

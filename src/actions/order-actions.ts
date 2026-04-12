@@ -66,10 +66,8 @@ export async function createOrderAction(formData: FormData) {
   upload.set('receivedDate', receivedDate);
   upload.set('completedDate', completedDate);
   upload.set('note', parsed.data.note || '');
-  upload.set(
-    'items',
-    typeof itemsRaw === 'string' ? itemsRaw : JSON.stringify(parsed.data.items),
-  );
+  // Kirim item hasil parse Zod agar lengthM/widthM selaras dengan validasi (bukan string mentah form).
+  upload.set('items', JSON.stringify(parsed.data.items));
   for (const file of imageFiles) {
     upload.append('images', file);
   }

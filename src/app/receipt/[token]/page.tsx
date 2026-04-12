@@ -7,6 +7,7 @@ import { WhatsAppShareButton } from "@/components/shared/whatsapp-share-button"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { resolveOrderImageUrls } from "@/lib/order-images"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 import { workflowLabel, paymentLabel } from "@/components/shared/status-badge"
@@ -52,6 +53,8 @@ type PublicReceipt = {
     unitPrice: string
     discount: string
     total: string
+    lengthM?: string | null
+    widthM?: string | null
   }>
 }
 
@@ -109,6 +112,8 @@ export default async function ReceiptPage({ params }: { params: { token: string 
                 unitPrice: it.unitPrice,
                 discount: it.discount,
                 total: it.total,
+                lengthM: it.lengthM ?? null,
+                widthM: it.widthM ?? null,
               }))}
               total={receipt.total}
               paidAmount={receipt.paidAmount}
@@ -153,7 +158,12 @@ export default async function ReceiptPage({ params }: { params: { token: string 
               const gross = lineGrossBeforeDiscount(qty, unitPrice)
               const pct = discountPercentOfGross(gross, discount)
               const lineTotal = Number(it.total)
-              const qtyLabel = `${qty.toLocaleString("id-ID")} ${it.unit}`
+              const qtyLabel = formatOrderItemQtyDescription({
+                unit: it.unit,
+                quantity: it.quantity,
+                lengthM: it.lengthM,
+                widthM: it.widthM,
+              })
               return (
                 <li key={`${it.serviceName}-${idx}`} className="space-y-1.5 px-3 py-3">
                   <p className="font-medium leading-snug text-foreground">{it.serviceName}</p>

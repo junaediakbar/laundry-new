@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { resolveOrderImageUrls } from "@/lib/order-images"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 
@@ -43,6 +44,8 @@ type OrderItemRow = {
   unitPrice: string
   discount: string
   total: string
+  lengthM?: string | null
+  widthM?: string | null
   serviceType: { name: string; unit: string }
   workAssignments: WorkAssignmentRow[]
 }
@@ -227,15 +230,20 @@ export default async function OrderDetailPage({
             </TableHeader>
             <TableBody>
               {order.items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.serviceType.name}</TableCell>
-                  <TableCell>
-                    {Number(item.quantity).toLocaleString("id-ID")} {item.serviceType.unit}
-                  </TableCell>
-                  <TableCell>{formatCurrency(Number(item.unitPrice))}</TableCell>
-                  <TableCell>{formatCurrency(Number(item.discount))}</TableCell>
-                  <TableCell>{formatCurrency(Number(item.total))}</TableCell>
-                </TableRow>
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.serviceType.name}</TableCell>
+                    <TableCell className="tabular-nums leading-snug">
+                      {formatOrderItemQtyDescription({
+                        unit: item.serviceType.unit,
+                        quantity: item.quantity,
+                        lengthM: item.lengthM,
+                        widthM: item.widthM,
+                      })}
+                    </TableCell>
+                    <TableCell>{formatCurrency(Number(item.unitPrice))}</TableCell>
+                    <TableCell>{formatCurrency(Number(item.discount))}</TableCell>
+                    <TableCell>{formatCurrency(Number(item.total))}</TableCell>
+                  </TableRow>
               ))}
               {order.items.length === 0 ? (
                 <TableRow>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { toast } from "react-toastify"
 
+import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -30,6 +31,8 @@ type OrderItemRow = {
   total: Decimalish
   serviceType: { name: string; unit: string }
   quantity: Decimalish
+  lengthM?: string | null
+  widthM?: string | null
   workAssignments: WorkAssignmentRow[]
 }
 
@@ -351,7 +354,12 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
         <div className="space-y-6">
           {items.map((item) => {
             const itemTotal = Number(item.total.toString())
-            const qty = Number(item.quantity.toString())
+            const qtyLine = formatOrderItemQtyDescription({
+              unit: item.serviceType.unit,
+              quantity: String(item.quantity),
+              lengthM: item.lengthM,
+              widthM: item.widthM,
+            })
             const serviceKey = normalizeServiceName(item.serviceType.name)
             const isEditing = editingService === serviceKey
             const template = isEditing ? draftByService[serviceKey] ?? getTemplate(item.serviceType.name) : getTemplate(item.serviceType.name)
@@ -383,7 +391,7 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
                   <div>
                     <p className="text-sm font-semibold">{item.serviceType.name}</p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {qty.toLocaleString("id-ID")} {item.serviceType.unit} • Subtotal Rp {formatIdr(itemTotal)}
+                      {qtyLine} • Subtotal Rp {formatIdr(itemTotal)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo, useState } from "react"
 
+import { isM2AreaUnit } from "@/lib/order-item-display"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,14 +45,21 @@ function discountAsRupiah(item: OrderItemDraft) {
   return Math.min(Math.max(0, item.discount), subtotal)
 }
 
-function toApiPayloadItem(item: OrderItemDraft) {
+function toApiPayloadItem(item: OrderItemDraft, serviceTypes: ServiceTypeOption[]) {
   const discount = Math.round(discountAsRupiah(item) * 100) / 100
-  return {
+  const st = serviceTypes.find((s) => s.id === item.serviceTypeId)
+  const len = item.length ?? 0
+  const wid = item.width ?? 0
+  const base = {
     serviceTypeId: item.serviceTypeId,
     quantity: item.quantity,
     unitPrice: item.unitPrice,
     discount,
   }
+  if (st && isM2AreaUnit(st.unit) && len > 0 && wid > 0) {
+    return { ...base, lengthM: len, widthM: wid }
+  }
+  return base
 }
 
 type OrderItemsFormProps = {
@@ -75,8 +84,8 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
   }, [items])
 
   const serialized = useMemo(
-    () => JSON.stringify(items.map(toApiPayloadItem)),
-    [items],
+    () => JSON.stringify(items.map((it) => toApiPayloadItem(it, serviceTypes))),
+    [items, serviceTypes],
   )
 
   const serviceTypeFetcher = useCallback(
@@ -120,7 +129,7 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
           const selected = serviceTypes.find((s) => s.id === item.serviceTypeId)
           const lineTotal = Math.max(lineSubtotal(item) - discountAsRupiah(item), 0)
           const rowKey = `${index}-${item.serviceTypeId}`
-          const isM2 = selected?.unit === "m2"
+          const isM2 = isM2AreaUnit(selected?.unit)
           const isM1 = selected?.unit === "m1"
 
           return (
@@ -141,16 +150,30 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                     onChange={(opt) => {
                       const nextId = opt?.value ?? ""
                       const nextService = serviceTypes.find((s) => s.id === nextId)
+                      const nextM2 = nextService ? isM2AreaUnit(nextService.unit) : false
                       setItems((prev) =>
-                        prev.map((p, i) =>
-                          i === index
-                            ? {
+                        prev.map((p, i) => {
+                          if (i !== index) return p
+                          if (nextM2) {
+                            const len = p.length ?? 0
+                            const wid = p.width ?? 0
+                            return {
                               ...p,
                               serviceTypeId: nextId,
                               unitPrice: nextService ? nextService.defaultPrice : p.unitPrice,
+                              length: len,
+                              width: wid,
+                              quantity: Math.max(len * wid, 0),
                             }
-                            : p,
-                        ),
+                          }
+                          return {
+                            ...p,
+                            serviceTypeId: nextId,
+                            unitPrice: nextService ? nextService.defaultPrice : p.unitPrice,
+                            length: undefined,
+                            width: undefined,
+                          }
+                        }),
                       )
                     }}
                   />

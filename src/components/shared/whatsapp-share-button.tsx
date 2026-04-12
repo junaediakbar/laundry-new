@@ -4,6 +4,7 @@ import { toast } from "react-toastify"
 
 import { Button } from "@/components/ui/button"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { formatOrderItemQtyForShare } from "@/lib/order-item-display"
 import { paymentLabel, workflowLabel } from "@/components/shared/status-badge"
 import { Share2 } from "lucide-react"
 
@@ -15,6 +16,8 @@ type WhatsAppItem = {
   /** Untuk rincian subtotal & baris diskon di struk WA */
   unitPrice?: string
   discount?: string
+  lengthM?: string | null
+  widthM?: string | null
 }
 
 type WhatsAppShareButtonProps = {
@@ -49,12 +52,12 @@ function formatPercentId(pct: number) {
 }
 
 function itemDetailLine(it: WhatsAppItem): string {
-  const q = it.quantity?.trim() ?? ""
-  const u = it.unit?.trim() ?? ""
-  if (!q && !u) return ""
-  if (!q) return u
-  if (!u) return q
-  return `${q} ${u}`.replace(/\s+/g, " ").trim()
+  return formatOrderItemQtyForShare({
+    unit: it.unit,
+    quantity: it.quantity,
+    lengthM: it.lengthM,
+    widthM: it.widthM,
+  })
 }
 
 function buildMessage(p: WhatsAppShareButtonProps, link: string) {
