@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-import { deleteEmployeeAction, updateTeamMemberAction } from "@/actions/employee-actions"
+import { updateTeamMemberAction } from "@/actions/employee-actions"
 import { EmployeeDeleteButton } from "@/components/employees/employee-delete-button"
 import { PageHeader } from "@/components/shared/page-header"
 import { ToastQuery } from "@/components/shared/toast-query"
