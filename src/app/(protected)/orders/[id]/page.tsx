@@ -139,6 +139,44 @@ export default async function OrderDetailPage({
 
   const itemCount = order.items.length
   const errMsg = searchParams?.error?.trim()
+  const isEmployeeViewer = session?.role === "employee"
+
+  const attachmentRows = order.attachments.map((a) => ({
+    id: a.id,
+    filePath: a.filePath,
+    createdAt: a.createdAt,
+  }))
+
+  if (isEmployeeViewer) {
+    return (
+      <div className="space-y-4">
+        {errMsg ? (
+          <Card className="border-destructive/50 bg-destructive/5">
+            <p className="text-sm text-destructive">{errMsg}</p>
+          </Card>
+        ) : null}
+        <div className="space-y-1">
+          <p className="text-sm font-semibold">{order.invoiceNumber}</p>
+          <p className="text-xs text-muted-foreground">{order.customer.name}</p>
+        </div>
+        <OrderAttachments
+          orderId={orderId}
+          orderImageUrls={orderImageUrls}
+          attachments={attachmentRows}
+          heading="Gambar saya"
+          description="Foto nota dan lampiran untuk referensi Anda."
+        />
+        <OrderWorkAssignments
+          orderId={orderId}
+          items={order.items}
+          employees={employees}
+          upsertWorkAssignment={upsertWorkAssignmentAction}
+          lockFilledAssignmentsForEmployee
+          viewerRole={session?.role}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -201,21 +239,6 @@ export default async function OrderDetailPage({
         </Card>
       </div>
 
-      <Card>
-        <p className="text-sm text-muted-foreground">Gambar Nota</p>
-        {orderImageUrls.length > 0 ? (
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            {orderImageUrls.map((url) => (
-              <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
-                <img src={url} alt="lampiran nota" className="max-h-80 w-full rounded-md border object-cover" />
-              </a>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-2 text-sm font-medium">-</p>
-        )}
-      </Card>
-
       <Card className="p-0">
         <div className="flex items-center justify-between px-4 py-3">
           <p className="text-sm font-semibold">Item Pesanan</p>
@@ -271,7 +294,9 @@ export default async function OrderDetailPage({
 
       <OrderAttachments
         orderId={orderId}
-        attachments={order.attachments.map((a) => ({ id: a.id, filePath: a.filePath, createdAt: a.createdAt }))}
+        orderImageUrls={orderImageUrls}
+        attachments={attachmentRows}
+        canUpload
       />
 
       <OrderDetailForms

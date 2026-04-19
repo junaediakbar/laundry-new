@@ -10,7 +10,8 @@ export function isM2AreaUnit(unit: string | undefined | null): boolean {
   return u === 'm2'
 }
 
-function parseDim(v: string | number | null | undefined): number | null {
+/** Parse angka meter (panjang/lebar) dari string/number. */
+export function parseDimMeter(v: string | number | null | undefined): number | null {
   if (v == null || v === '') return null
   const n =
     typeof v === 'number' ? v : Number(String(v).trim().replace(/\s/g, '').replace(',', '.'))
@@ -34,8 +35,8 @@ export function formatOrderItemQtyDescription(input: {
   widthM?: string | number | null
 }): string {
   const unit = (input.unit || '').trim()
-  const lm = parseDim(input.lengthM)
-  const wm = parseDim(input.widthM)
+  const lm = parseDimMeter(input.lengthM)
+  const wm = parseDimMeter(input.widthM)
   if (isM2AreaUnit(unit) && lm != null && wm != null) {
     const area = lm * wm
     return `${formatDimM(lm)} m × ${formatDimM(wm)} m = ${formatDimM(area)} m²`

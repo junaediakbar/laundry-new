@@ -246,3 +246,37 @@ export async function deleteOrderAction(orderId: string) {
   revalidatePath('/orders');
   redirect('/orders');
 }
+
+export async function uploadOrderImagesAction(orderId: string, formData: FormData) {
+  const files = formData
+    .getAll('images')
+    .filter((f): f is File => f instanceof File && f.size > 0)
+    .slice(0, 3);
+
+  if (files.length === 0) {
+    return { ok: false as const, error: 'Pilih minimal satu file gambar.' };
+  }
+
+  const upload = new FormData();
+  for (const file of files) {
+    upload.append('images', file);
+  }
+
+  try {
+    await backendFetch<{ ok: boolean }>(`/api/v1/orders/${orderId}/images`, {
+      method: 'POST',
+      body: upload,
+    });
+    revalidatePath(`/orders/${orderId}`);
+    revalidatePath('/orders');
+    return { ok: true as const };
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      if (e.status === 401) {
+        return { ok: false as const, error: 'Sesi habis. Silakan login ulang.' };
+      }
+      return { ok: false as const, error: e.message };
+    }
+    return { ok: false as const, error: 'Gagal mengunggah gambar.' };
+  }
+}
