@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react"
 import { toast } from "react-toastify"
 
 import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
+import { inOwnerGroupForViewer, isOwnerDisplayName } from "@/lib/owner-group"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +14,8 @@ import { Plus, RotateCcw, Save, Settings2, Trash2, X } from "lucide-react"
 type EmployeeOption = {
   id: string
   name: string
+  /** Untuk menyatukan ringkasan upah Owner; kosong jika tidak dikirim API. */
+  role?: string
 }
 
 type Decimalish = string | number | { toString(): string }
@@ -41,6 +44,10 @@ type OrderWorkAssignmentsProps = {
   items: OrderItemRow[]
   employees: EmployeeOption[]
   upsertWorkAssignment: (formData: FormData) => Promise<void>
+  /** Role karyawan: baris yang sudah ada penugasan tidak bisa diubah */
+  lockFilledAssignmentsForEmployee?: boolean
+  /** Untuk menggabung ringkasan upah beberapa akun Owner */
+  viewerRole?: string
 }
 
 type TaskDef = { key: string; label: string; percent: number }
@@ -184,7 +191,26 @@ function formatIdr(value: number) {
   return new Intl.NumberFormat("id-ID").format(value)
 }
 
-export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssignment }: OrderWorkAssignmentsProps) {
+function ownerMergeKey(
+  employeeId: string,
+  employeeName: string,
+  employeesList: EmployeeOption[],
+  viewerRole: string | undefined,
+) {
+  const emp = employeesList.find((e) => e.id === employeeId)
+  if (emp && inOwnerGroupForViewer(emp, viewerRole)) return "__owner_merged__"
+  if (isOwnerDisplayName(employeeName)) return "__owner_merged__"
+  return employeeId
+}
+
+export function OrderWorkAssignments({
+  orderId,
+  items,
+  employees,
+  upsertWorkAssignment,
+  lockFilledAssignmentsForEmployee = false,
+  viewerRole,
+}: OrderWorkAssignmentsProps) {
   const [pending, startTransition] = useTransition()
   const [templatesByService, setTemplatesByService] = useState<Record<string, WorkTemplate>>({})
   const [editingService, setEditingService] = useState<string | null>(null)
@@ -303,18 +329,25 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
     for (const item of items) {
       for (const assignment of item.workAssignments) {
         const amount = Number(assignment.amount.toString())
-        const current = map.get(assignment.employee.id)
+        const key = ownerMergeKey(
+          assignment.employee.id,
+          assignment.employee.name,
+          employees,
+          viewerRole,
+        )
+        const displayName = key === "__owner_merged__" ? "Owner" : assignment.employee.name
+        const current = map.get(key)
         if (current) {
           current.amount += amount
         } else {
-          map.set(assignment.employee.id, { name: assignment.employee.name, amount })
+          map.set(key, { name: displayName, amount })
         }
       }
     }
     return Array.from(map.entries())
       .map(([employeeId, value]) => ({ employeeId, ...value }))
       .sort((a, b) => b.amount - a.amount)
-  }, [items])
+  }, [items, employees, viewerRole])
 
   const selectedByItemAndTask = useMemo(() => {
     const map = new Map<string, string>()
@@ -561,6 +594,7 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
                       employees={employees}
                       selectedByItemAndTask={selectedByItemAndTask}
                       pending={pending}
+                      lockFilledAssignmentsForEmployee={lockFilledAssignmentsForEmployee}
                       getPercent={(taskKey, fallback) => {
                         if (isEditing) return fallback
                         const fromAssignment = percentByTask.get(taskKey)
@@ -589,6 +623,7 @@ export function OrderWorkAssignments({ orderId, items, employees, upsertWorkAssi
                       employees={employees}
                       selectedByItemAndTask={selectedByItemAndTask}
                       pending={pending}
+                      lockFilledAssignmentsForEmployee={lockFilledAssignmentsForEmployee}
                       getPercent={(_, fallback) => fallback}
                       onSubmit={(formData) => {
                         startTransition(async () => {
@@ -629,6 +664,7 @@ function TaskGroup({
   employees,
   selectedByItemAndTask,
   pending,
+  lockFilledAssignmentsForEmployee,
   getPercent,
   onSubmit,
 }: {
@@ -639,6 +675,7 @@ function TaskGroup({
   employees: EmployeeOption[]
   selectedByItemAndTask: Map<string, string>
   pending: boolean
+  lockFilledAssignmentsForEmployee?: boolean
   getPercent: (taskKey: string, fallbackPercent: number) => number
   onSubmit: (formData: FormData) => void
 }) {
@@ -653,6 +690,8 @@ function TaskGroup({
         {tasks.map((task) => {
           const selectedEmployeeId = selectedByItemAndTask.get(`${itemId}:${task.key}`) ?? ""
           const pct = getPercent(task.key, task.percent)
+          const rowLocked =
+            Boolean(lockFilledAssignmentsForEmployee) && selectedEmployeeId.trim() !== ""
           return (
             <form
               key={task.key}
@@ -668,9 +707,12 @@ function TaskGroup({
                 <p className="text-sm font-medium">
                   {task.label} <span className="text-xs text-muted-foreground">({formatPercentId(pct)}%)</span>
                 </p>
+                {rowLocked ? (
+                  <p className="mt-1 text-xs text-muted-foreground">Penugasan terkunci setelah diisi.</p>
+                ) : null}
               </div>
               <div className="sm:col-span-5">
-                <Select name="employeeId" defaultValue={selectedEmployeeId} disabled={pending}>
+                <Select name="employeeId" defaultValue={selectedEmployeeId} disabled={pending || rowLocked}>
                   <option value="">-</option>
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>
@@ -680,7 +722,7 @@ function TaskGroup({
                 </Select>
               </div>
               <div className="sm:col-span-2">
-                <Button type="submit" size="sm" className="w-full" disabled={pending}>
+                <Button type="submit" size="sm" className="w-full" disabled={pending || rowLocked}>
                   <Save className="h-4 w-4" />
                 </Button>
               </div>

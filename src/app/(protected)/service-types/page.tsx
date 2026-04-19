@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { PageHeader } from "@/components/shared/page-header"
+import { ToastQuery } from "@/components/shared/toast-query"
 import { ServiceTypeDeleteButton } from "@/components/service-types/service-type-delete-button"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -49,6 +50,7 @@ export default async function ServiceTypesPage({ searchParams }: ServiceTypesPag
 
   return (
     <div>
+      <ToastQuery successParam="saved" successMessage="Data berhasil disimpan" />
       <PageHeader title="Jenis Pesanan" actionHref="/service-types/new" actionLabel="Tambah Jenis" />
       <form className="mb-4 flex max-w-md gap-2">
         <Input name="q" defaultValue={q} placeholder="Cari jenis pesanan..." />

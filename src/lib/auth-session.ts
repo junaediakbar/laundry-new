@@ -4,10 +4,12 @@ import crypto from 'crypto';
 
 const cookieName = 'laundry_session';
 
-type SessionPayload = {
+export type SessionPayload = {
   uid: string;
   email: string;
   role: string;
+  /** Set when role is employee — links to `employees` row for performance. */
+  employeeId?: string;
   exp: number;
 };
 
@@ -24,9 +26,16 @@ export function signSession(
   email: string,
   role: string,
   ttlSeconds: number,
+  employeeId?: string | null,
 ) {
   const now = Math.floor(Date.now() / 1000);
-  const payload: SessionPayload = { uid, email, role, exp: now + ttlSeconds };
+  const payload: SessionPayload = {
+    uid,
+    email,
+    role,
+    exp: now + ttlSeconds,
+    ...(employeeId && employeeId.trim() ? { employeeId: employeeId.trim() } : {}),
+  };
   const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString(
     'base64url',
   );
@@ -65,8 +74,9 @@ export function verifySession(token: string | undefined | null) {
     !payload?.email ||
     !payload?.role ||
     typeof payload.exp !== 'number'
-  )
+  ) {
     return null;
+  }
   const now = Math.floor(Date.now() / 1000);
   if (payload.exp <= now) return null;
   return payload;

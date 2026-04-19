@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { PageHeader } from "@/components/shared/page-header"
+import { ToastQuery } from "@/components/shared/toast-query"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -46,6 +47,8 @@ export default async function CustomersPage({ searchParams }: CustomersPageProps
 
   return (
     <div>
+      <ToastQuery successParam="created" successMessage="Pelanggan berhasil ditambahkan" />
+      <ToastQuery successParam="saved" successMessage="Perubahan disimpan" />
       <PageHeader title="Pelanggan" actionHref="/customers/new" actionLabel="Tambah Pelanggan" />
       <form className="mb-4 flex max-w-md gap-2">
         <Input

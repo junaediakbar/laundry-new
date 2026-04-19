@@ -56,7 +56,7 @@ export async function createCustomerAction(formData: FormData) {
   }
 
   revalidatePath('/customers');
-  redirect(`/customers/${customer.id}?created=1`);
+  redirect('/customers?created=1');
 }
 
 // ---------------------------------------------------------------------------
@@ -116,7 +116,7 @@ export async function updateCustomerAction(
   }
 
   revalidatePath('/customers');
-  redirect(`/customers/${customerId}?saved=1`);
+  redirect('/customers?saved=1');
 }
 
 export async function deleteCustomerAction(customerId: string) {

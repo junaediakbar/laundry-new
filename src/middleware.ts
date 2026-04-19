@@ -49,6 +49,13 @@ async function verifySessionToken(token: string | undefined) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith('/users')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/employees';
+    return NextResponse.redirect(url);
+  }
+
   const token = request.cookies.get('laundry_session')?.value;
   const isLoggedIn = await verifySessionToken(token);
 
@@ -59,7 +66,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/service-types') ||
     pathname.startsWith('/delivery-planning') ||
     pathname.startsWith('/employees') ||
-    pathname.startsWith('/users') ||
     pathname.startsWith('/reports');
 
   if (!isLoggedIn && isProtectedPath) {

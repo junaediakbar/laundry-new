@@ -31,7 +31,13 @@ export async function loginAction(formData: FormData) {
   }).catch(() => null);
 
   const json = (await res?.json().catch(() => null)) as
-    | { ok: true; data: { token: string; user: { id: string; email: string; role: string } } }
+    | {
+        ok: true;
+        data: {
+          token: string;
+          user: { id: string; email: string; role: string; employeeId?: string };
+        };
+      }
     | { ok: false; error: { message?: string } }
     | null;
 
@@ -50,7 +56,13 @@ export async function loginAction(formData: FormData) {
     path: '/',
   });
 
-  const token = signSession(user.id, user.email, user.role, 60 * 60 * 24 * 7);
+  const token = signSession(
+    user.id,
+    user.email,
+    user.role,
+    60 * 60 * 24 * 7,
+    user.employeeId,
+  );
   cookies().set(authCookieName(), token, {
     httpOnly: true,
     sameSite: 'lax',

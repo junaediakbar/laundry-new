@@ -30,7 +30,7 @@ export async function createServiceTypeAction(formData: FormData) {
   }).catch(() => null);
 
   revalidatePath('/service-types');
-  redirect('/service-types');
+  redirect('/service-types?saved=1');
 }
 
 export async function updateServiceTypeAction(
@@ -60,7 +60,7 @@ export async function updateServiceTypeAction(
   }).catch(() => null);
 
   revalidatePath('/service-types');
-  redirect('/service-types');
+  redirect('/service-types?saved=1');
 }
 
 

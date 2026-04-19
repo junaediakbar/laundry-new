@@ -12,6 +12,7 @@ import { StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { getSession } from "@/lib/auth"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { resolveOrderImageUrls } from "@/lib/order-images"
@@ -27,7 +28,7 @@ const workflowOptions = [
   "picked_up",
 ]
 
-type EmployeeOption = { id: string; name: string }
+type EmployeeOption = { id: string; name: string; role?: string }
 
 type WorkAssignmentRow = {
   id: string
@@ -82,7 +83,10 @@ export default async function OrderDetailPage({
   params: { id: string }
   searchParams?: { error?: string }
 }) {
-  const employeesPromise = backendFetch<EmployeeOption[]>(`/api/v1/employees?active=true`).catch(() => [])
+  const [session, employees] = await Promise.all([
+    getSession(),
+    backendFetch<EmployeeOption[]>(`/api/v1/employees?active=true`).catch(() => []),
+  ])
   let order: OrderDetail | null = null
   let orderError: unknown = null
   try {
@@ -91,7 +95,6 @@ export default async function OrderDetailPage({
     order = null
     orderError = e
   }
-  const employees = await employeesPromise
 
   if (!order) {
     if (orderError instanceof BackendFetchError && orderError.status === 404) {
@@ -230,20 +233,20 @@ export default async function OrderDetailPage({
             </TableHeader>
             <TableBody>
               {order.items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.serviceType.name}</TableCell>
-                    <TableCell className="tabular-nums leading-snug">
-                      {formatOrderItemQtyDescription({
-                        unit: item.serviceType.unit,
-                        quantity: item.quantity,
-                        lengthM: item.lengthM,
-                        widthM: item.widthM,
-                      })}
-                    </TableCell>
-                    <TableCell>{formatCurrency(Number(item.unitPrice))}</TableCell>
-                    <TableCell>{formatCurrency(Number(item.discount))}</TableCell>
-                    <TableCell>{formatCurrency(Number(item.total))}</TableCell>
-                  </TableRow>
+                <TableRow key={item.id}>
+                  <TableCell className="font-medium">{item.serviceType.name}</TableCell>
+                  <TableCell className="tabular-nums leading-snug">
+                    {formatOrderItemQtyDescription({
+                      unit: item.serviceType.unit,
+                      quantity: item.quantity,
+                      lengthM: item.lengthM,
+                      widthM: item.widthM,
+                    })}
+                  </TableCell>
+                  <TableCell>{formatCurrency(Number(item.unitPrice))}</TableCell>
+                  <TableCell>{formatCurrency(Number(item.discount))}</TableCell>
+                  <TableCell>{formatCurrency(Number(item.total))}</TableCell>
+                </TableRow>
               ))}
               {order.items.length === 0 ? (
                 <TableRow>
@@ -257,7 +260,14 @@ export default async function OrderDetailPage({
         </div>
       </Card>
 
-      <OrderWorkAssignments orderId={orderId} items={order.items} employees={employees} upsertWorkAssignment={upsertWorkAssignmentAction} />
+      <OrderWorkAssignments
+        orderId={orderId}
+        items={order.items}
+        employees={employees}
+        upsertWorkAssignment={upsertWorkAssignmentAction}
+        lockFilledAssignmentsForEmployee={session?.role === "employee"}
+        viewerRole={session?.role}
+      />
 
       <OrderAttachments
         orderId={orderId}

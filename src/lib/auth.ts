@@ -5,9 +5,13 @@ import { redirect } from 'next/navigation';
 
 import { authCookieName, verifySession } from '@/lib/auth-session';
 
-export async function requireAuth() {
+export async function getSession() {
   const token = cookies().get(authCookieName())?.value;
-  const session = verifySession(token);
+  return verifySession(token);
+}
+
+export async function requireAuth() {
+  const session = await getSession();
   if (!session) {
     redirect('/login');
   }

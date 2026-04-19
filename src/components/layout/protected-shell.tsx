@@ -4,11 +4,18 @@ import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 
+import { EmployeeRouteGuard } from "@/components/layout/employee-route-guard"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-export function ProtectedShell({ children }: { children: React.ReactNode }) {
+export function ProtectedShell({
+  children,
+  role,
+}: {
+  children: React.ReactNode
+  role: string
+}) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
@@ -26,7 +33,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
     >
       <div className="md:flex md:min-h-[100dvh] md:min-h-screen">
         <div className="hidden md:block">
-          <Sidebar />
+          <Sidebar role={role} />
         </div>
 
         <div className="flex min-h-0 min-h-[100dvh] flex-1 flex-col md:min-h-screen">
@@ -61,7 +68,7 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
                 "landscape:max-w-[min(100%,96rem)]",
               )}
             >
-              {children}
+              <EmployeeRouteGuard role={role}>{children}</EmployeeRouteGuard>
             </div>
           </main>
         </div>
@@ -94,7 +101,11 @@ export function ProtectedShell({ children }: { children: React.ReactNode }) {
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <Sidebar className="max-h-[calc(100dvh-3.5rem)] border-r-0 md:border-r" onNavigate={() => setOpen(false)} />
+          <Sidebar
+            role={role}
+            className="max-h-[calc(100dvh-3.5rem)] border-r-0 md:border-r"
+            onNavigate={() => setOpen(false)}
+          />
         </div>
       </div>
     </div>

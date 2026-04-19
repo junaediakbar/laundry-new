@@ -5,7 +5,6 @@ import { ToastQuery } from "@/components/shared/toast-query"
 import { Card } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { formatCurrency } from "@/lib/format"
 import { backendFetch } from "@/lib/backend"
 import { OrdersFilter } from "@/components/orders/orders-filter"
 
@@ -74,7 +73,6 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                 <TableHead>Invoice</TableHead>
                 <TableHead>Pelanggan</TableHead>
                 <TableHead>Item</TableHead>
-                <TableHead>Total</TableHead>
                 <TableHead>Pembayaran</TableHead>
                 <TableHead>Workflow</TableHead>
                 <TableHead className="w-[1%]" />
@@ -93,7 +91,6 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                       <p className="text-xs text-muted-foreground">{order.itemCount} item</p>
                     </div>
                   </TableCell>
-                  <TableCell>{formatCurrency(Number(order.total))}</TableCell>
                   <TableCell>
                     <StatusBadge type="payment" value={order.paymentStatus} />
                   </TableCell>
@@ -112,7 +109,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               ))}
               {orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                     Belum ada data pesanan.
                   </TableCell>
                 </TableRow>

@@ -128,7 +128,7 @@ export async function createDeliveryPlanAction(formData: FormData) {
   }
 
   revalidatePath('/delivery-planning');
-  redirect(`/delivery-planning/${created.id}`);
+  redirect('/delivery-planning?created=1');
 }
 
 export async function deleteDeliveryPlanAction(planId: string) {

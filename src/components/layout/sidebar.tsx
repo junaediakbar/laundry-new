@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  BarChart3,
   Droplets,
   FileText,
   Home,
@@ -10,7 +11,6 @@ import {
   ReceiptText,
   Tags,
   Truck,
-  User,
   UserCog,
   Users,
 } from "lucide-react"
@@ -19,24 +19,31 @@ import { signOutAction } from "@/actions/auth-actions"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-const menus = [
+const staffMenus = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/customers", label: "Pelanggan", icon: Users },
   { href: "/orders", label: "Pesanan", icon: ReceiptText },
   { href: "/service-types", label: "Jenis Pesanan", icon: Tags },
   { href: "/delivery-planning", label: "Perencanaan Pengiriman", icon: Truck },
-  { href: "/employees", label: "Karyawan", icon: User },
-  { href: "/users", label: "Users", icon: UserCog },
+  { href: "/employees", label: "Tim & akun", icon: UserCog },
   { href: "/reports", label: "Laporan", icon: FileText },
+] as const
+
+const employeeMenus = [
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/orders", label: "Daftar Nota", icon: ReceiptText },
+  { href: "/employees/performance", label: "Performa", icon: BarChart3 },
 ] as const
 
 type SidebarProps = {
   className?: string
   onNavigate?: () => void
+  role?: string
 }
 
-export function Sidebar({ className, onNavigate }: SidebarProps) {
+export function Sidebar({ className, onNavigate, role }: SidebarProps) {
   const pathname = usePathname()
+  const menus = role === "employee" ? employeeMenus : staffMenus
 
   return (
     <aside

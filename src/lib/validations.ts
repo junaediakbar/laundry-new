@@ -18,29 +18,54 @@ export const customerSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const employeeSchema = z.object({
+/** Satu baris employees = profil + akun (email & password wajib saat tambah). */
+export const teamMemberSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
   isActive: z
     .union([z.literal('on'), z.literal('true'), z.literal('false')])
     .optional()
     .transform((value) => value === 'on' || value === 'true'),
+  email: z.string().email('Email tidak valid'),
+  password: z.string().min(6, 'Password minimal 6 karakter'),
+  role: z.union([
+    z.literal('owner'),
+    z.literal('admin'),
+    z.literal('cashier'),
+    z.literal('employee'),
+  ]),
 });
+
+export const updateTeamMemberSchema = z
+  .object({
+    name: z.string().min(2, 'Nama minimal 2 karakter'),
+    email: z.string().email('Email tidak valid'),
+    role: z.union([
+      z.literal('owner'),
+      z.literal('admin'),
+      z.literal('cashier'),
+      z.literal('employee'),
+    ]),
+    isActive: z
+      .union([z.literal('on'), z.literal('true'), z.literal('false')])
+      .optional()
+      .transform((value) => value === 'on' || value === 'true'),
+    password: z.string().optional().or(z.literal('')),
+  })
+  .superRefine((data, ctx) => {
+    const pw = (data.password ?? '').trim();
+    if (pw.length > 0 && pw.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Password minimal 6 karakter',
+        path: ['password'],
+      });
+    }
+  });
 
 export const serviceTypeSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
   unit: z.string().min(1, 'Satuan wajib diisi'),
   defaultPrice: z.coerce.number().nonnegative('Harga tidak boleh negatif'),
-  isActive: z
-    .union([z.literal('on'), z.literal('true'), z.literal('false')])
-    .optional()
-    .transform((value) => value === 'on' || value === 'true'),
-});
-
-export const userSchema = z.object({
-  name: z.string().min(2, 'Nama minimal 2 karakter'),
-  email: z.string().email('Email tidak valid'),
-  role: z.union([z.literal('owner'), z.literal('admin'), z.literal('cashier')]),
-  password: z.string().optional().or(z.literal('')),
   isActive: z
     .union([z.literal('on'), z.literal('true'), z.literal('false')])
     .optional()

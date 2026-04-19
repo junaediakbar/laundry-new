@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { PageHeader } from "@/components/shared/page-header"
+import { ToastQuery } from "@/components/shared/toast-query"
 import { DeliveryPlanDeleteButton } from "@/components/delivery-planning/delivery-plan-delete-button"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -18,7 +19,7 @@ type DeliveryPlanRow = {
 export default async function DeliveryPlanningPage({
   searchParams,
 }: {
-  searchParams?: { error?: string }
+  searchParams?: { error?: string; created?: string }
 }) {
   const err = searchParams?.error?.trim() ?? ""
   const plans =
@@ -26,6 +27,7 @@ export default async function DeliveryPlanningPage({
 
   return (
     <div>
+      <ToastQuery successParam="created" successMessage="Rencana pengiriman berhasil dibuat" />
       <PageHeader title="Perencanaan Pengiriman" actionHref="/delivery-planning/new" actionLabel="Buat Rencana" />
       {err ? <p className="mb-4 text-sm text-red-600">{err}</p> : null}
 
