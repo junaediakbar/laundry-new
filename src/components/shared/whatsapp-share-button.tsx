@@ -53,11 +53,6 @@ function formatRp(n: number) {
   return `Rp ${Math.round(n).toLocaleString("id-ID")}`
 }
 
-/** Hilangkan `*` dari teks pengguna agar tidak memutus pasangan bold WhatsApp (*teks*). */
-function stripWaAsterisk(s: string) {
-  return s.replace(/\*/g, "")
-}
-
 /** Angka untuk sisi kali (qty / luas): pemisah ribuan & desimal id-ID. */
 function formatQtyId(n: number) {
   return n.toLocaleString("id-ID", {
