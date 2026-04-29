@@ -143,6 +143,19 @@ function buildMessage(p: WhatsAppShareButtonProps, link: string) {
     link,
     ``,
     `Terima kasih.`,
+    ``,
+    `*Syarat dan Ketentuan Laundry:`,
+    ``,
+    `*PERHATIAN:*
+1. Pengambilan barang harap menunjukkan nota
+2. Penyelesaian cucian reguler 5 hari dan maksimal 7 hari
+3. Layanan antar jemput, pengantaran menyesuaikan jalur antar jemput/jadwal delivery
+4. Layanan antar jemput hangus jika setelah 1 (satu) bulan (terhitung tanggal saat cucian diterima) dan terjadi gagal pengantaran karena belum dibayar/atau tidak ada pihak customer di tempat pengantaran
+5. 1 (satu) bulan terhitung dari tanggal cucian diterima barang belum diambil/gagal antar, dikenakan biaya penitipan 10% dari harga cucian, dan jika rusak/hilang tidak diganti
+6. Barang yang akan dilaundry mohon diperiksa/dikontrol dulu bila ada cacat/sudah rapuh/lapuk agar diberitahukan kepada kami, kerusakan akibat barang yang sudah rapuh/lapuk bukan tanggung jawab kami
+7. Barang hilang/rusak karena proses pengerjaan yang lalai diganti maksimal 2 (dua) x ongkos cuci barang yang dimaksud
+8. Hak klaim berlaku 24 jam setelah barang diambil
+9. Setiap konsumen dianggap setuju dengan isi syarat & ketentuan tersebut diatas`,
   ]
 
   return lines.join("\n")

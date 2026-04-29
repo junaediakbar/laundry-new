@@ -235,6 +235,23 @@ export default async function ReceiptPage({ params }: { params: { token: string 
             <p className="text-sm text-muted-foreground">{receipt.note}</p>
           </div>
         ) : null}
+
+        <div className="border-t pt-3 text-xs text-muted-foreground">
+          <p className="mb-2 font-semibold text-foreground">Syarat dan Ketentuan Laundry</p>
+          <p className="mb-1 font-medium">PERHATIAN:</p>
+          <ol className="ml-4 list-decimal space-y-1">
+            <li>Pengambilan barang harap menunjukkan nota</li>
+            <li>Penyelesaian cucian reguler 5 hari dan maksimal 7 hari</li>
+            <li>Layanan antar jemput, pengantaran menyesuaikan jalur antar jemput/jadwal delivery</li>
+            <li>Layanan antar jemput hangus jika setelah 1 (satu) bulan (terhitung tanggal saat cucian diterima) dan terjadi gagal pengantaran karena belum dibayar/atau tidak ada pihak customer di tempat pengantaran</li>
+            <li>1 (satu) bulan terhitung dari tanggal cucian diterima barang belum diambil/gagal antar, dikenakan biaya penitipan 10% dari harga cucian, dan jika rusak/hilang tidak diganti</li>
+            <li>Barang yang akan dilaundry mohon diperiksa/dikontrol dulu bila ada cacat/sudah rapuh/lapuk agar diberitahukan kepada kami, kerusakan akibat barang yang sudah rapuh/lapuk bukan tanggung jawab kami</li>
+            <li>Barang hilang/rusak karena proses pengerjaan yang lalai diganti maksimal 2 (dua) x ongkos cuci barang yang dimaksud</li>
+            <li>Hak klaim berlaku 24 jam setelah barang diambil</li>
+            <li>Setiap konsumen dianggap setuju dengan isi syarat & ketentuan tersebut diatas</li>
+          </ol>
+          <p className="mt-2 text-center">Terima kasih</p>
+        </div>
       </Card>
     </div>
   )
