@@ -1,16 +1,14 @@
 "use client"
 
 import { useCallback, useMemo, useState } from "react"
-
+import Image from "next/image"
 import { isM2AreaUnit } from "@/lib/order-item-display"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SearchableSelect, type SearchableOption } from "@/components/ui/searchable-select"
 import { Select } from "@/components/ui/select"
-import { Trash2 } from "lucide-react"
-
+import { Trash2, Upload, X } from "lucide-react"
 
 type ServiceTypeOption = {
   id: string
@@ -29,6 +27,7 @@ type OrderItemDraft = {
   discountMode: DiscountMode
   length?: number
   width?: number
+  imageFile: File | null
 }
 
 function lineSubtotal(item: Pick<OrderItemDraft, "quantity" | "unitPrice">) {
@@ -72,7 +71,7 @@ function formatIdr(value: number) {
 
 export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
   const [items, setItems] = useState<OrderItemDraft[]>([
-    { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0, discountMode: "fixed" },
+    { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0, discountMode: "fixed", imageFile: null },
   ])
 
   const total = useMemo(() => {
@@ -116,7 +115,7 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
           onClick={() => {
             setItems((prev) => [
               ...prev,
-              { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0, discountMode: "fixed" },
+              { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0, discountMode: "fixed", imageFile: null },
             ])
           }}
         >
@@ -365,7 +364,63 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="mt-3 space-y-2 mb-2">
+                <Label htmlFor={`item-image-${index}`}>Gambar Item   (opsional)</Label>
+                <Input
+                  id={`item-image-${index}`}
+                  name={`item-images-${index}`}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setItems((prev) =>
+                        prev.map((p, i) =>
+                          i === index ? { ...p, imageFile: file } : p,
+                        ),
+                      )
+                    }
+                  }}
+                />
+                {item.imageFile && (
+                  <div className="flex items-center gap-3 rounded-lg border bg-muted/20 p-3">
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border">
+                      <Image
+                        src={URL.createObjectURL(item.imageFile)}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{item.imageFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(item.imageFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      onClick={() => {
+                        setItems((prev) =>
+                          prev.map((p, i) =>
+                            i === index ? { ...p, imageFile: null } : p,
+                          ),
+                        )
+                        // Reset file input
+                        const input = document.getElementById(`item-image-${index}`) as HTMLInputElement
+                        if (input) input.value = ''
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">Subtotal baris</p>
                 <p className="text-sm font-semibold">Rp {formatIdr(lineTotal)}</p>
               </div>

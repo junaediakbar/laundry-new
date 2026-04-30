@@ -58,6 +58,21 @@ export async function createOrderAction(formData: FormData) {
     .filter((f): f is File => f instanceof File && f.size > 0)
     .slice(0, 3);
 
+  // Extract item images from FormData (item-images-0, item-images-1, etc.)
+  const itemImages: File[] = [];
+  let itemIndex = 0;
+  while (true) {
+    const files = formData.getAll(`item-images-${itemIndex}`);
+    const validFile = files.find((f): f is File => f instanceof File && f.size > 0);
+    if (validFile) {
+      itemImages.push(validFile);
+    } else if (files.length === 0) {
+      // No more items
+      break;
+    }
+    itemIndex++;
+  }
+
   const receivedDate = normalizeWitaDateTimeInput(parsed.data.receivedDate);
   const completedDate = normalizeWitaDateTimeInput(parsed.data.completedDate);
 
@@ -73,10 +88,40 @@ export async function createOrderAction(formData: FormData) {
   }
 
   try {
-    await backendFetch<{ id: string }>('/api/v1/orders', {
+    const orderResponse = await backendFetch<{
+      id: string;
+      items: Array<{ id: string }>;
+    }>('/api/v1/orders', {
       method: 'POST',
       body: upload,
     });
+
+    // Upload item images after order is created
+    if (itemImages.length > 0 && orderResponse.items) {
+      for (let i = 0; i < itemImages.length && i < orderResponse.items.length; i++) {
+        const file = itemImages[i];
+        const orderItemId = orderResponse.items[i]?.id;
+        if (file && orderItemId) {
+          try {
+            const itemImageUpload = new FormData();
+            itemImageUpload.append('image', file);
+            await backendFetch<{ imageUrl: string }>(
+              `/api/v1/orders/items/${orderItemId}/image`,
+              {
+                method: 'POST',
+                body: itemImageUpload,
+              },
+            );
+          } catch (itemImageError) {
+            // Log error but don't fail the entire order creation
+            console.error('Failed to upload item image', {
+              orderItemId,
+              error: itemImageError,
+            });
+          }
+        }
+      }
+    }
   } catch (e) {
     if (e instanceof BackendFetchError) {
       console.error('createOrderAction backend error', {
@@ -269,6 +314,33 @@ export async function uploadOrderImagesAction(orderId: string, formData: FormDat
     });
     revalidatePath(`/orders/${orderId}`);
     revalidatePath('/orders');
+    return { ok: true as const };
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      if (e.status === 401) {
+        return { ok: false as const, error: 'Sesi habis. Silakan login ulang.' };
+      }
+      return { ok: false as const, error: e.message };
+    }
+    return { ok: false as const, error: 'Gagal mengunggah gambar.' };
+  }
+}
+
+export async function uploadOrderItemImageAction(orderItemId: string, formData: FormData) {
+  const file = formData.get('image');
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false as const, error: 'Pilih satu file gambar.' };
+  }
+
+  const upload = new FormData();
+  upload.append('image', file);
+
+  try {
+    await backendFetch<{ imageUrl: string }>(`/api/v1/orders/items/${orderItemId}/image`, {
+      method: 'POST',
+      body: upload,
+    });
+    revalidatePath(`/orders`);
     return { ok: true as const };
   } catch (e) {
     if (e instanceof BackendFetchError) {

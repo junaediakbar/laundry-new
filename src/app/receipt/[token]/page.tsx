@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import Image from "next/image"
 
 import { CopyLinkButton } from "@/components/shared/copy-link-button"
 import { PrintButton } from "@/components/shared/print-button"
@@ -55,6 +56,7 @@ type PublicReceipt = {
     total: string
     lengthM?: string | null
     widthM?: string | null
+    image?: string | null
   }>
 }
 
@@ -167,6 +169,17 @@ export default async function ReceiptPage({ params }: { params: { token: string 
               return (
                 <li key={`${it.serviceName}-${idx}`} className="space-y-1.5 px-3 py-3">
                   <p className="font-medium leading-snug text-foreground">{it.serviceName}</p>
+                  {it.image && (
+                    <div className="mt-2">
+                      <Image
+                        src={it.image}
+                        alt={`Gambar ${it.serviceName}`}
+                        width={400}
+                        height={200}
+                        className="max-h-32 w-full rounded-md border object-cover"
+                      />
+                    </div>
+                  )}
                   <div className="flex items-baseline justify-between gap-3 tabular-nums">
                     <span className="min-w-0 text-muted-foreground">
                       {qtyLabel} × {formatCurrency(unitPrice)}
@@ -222,7 +235,13 @@ export default async function ReceiptPage({ params }: { params: { token: string 
             <div className="grid gap-2 sm:grid-cols-2">
               {imageUrls.map((url) => (
                 <a key={url} href={url} target="_blank" rel="noreferrer" className="block">
-                  <img src={url} alt="lampiran nota" className="max-h-80 w-full rounded-md border object-cover" />
+                  <Image
+                    src={url}
+                    alt="lampiran nota"
+                    width={800}
+                    height={480}
+                    className="max-h-80 w-full rounded-md border object-cover"
+                  />
                 </a>
               ))}
             </div>

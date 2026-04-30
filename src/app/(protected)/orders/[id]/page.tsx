@@ -7,6 +7,7 @@ import { upsertWorkAssignmentAction } from "@/actions/work-actions"
 import { OrderDetailForms } from "@/components/orders/order-detail-forms"
 import { OrderAttachments } from "@/components/orders/order-attachments"
 import { OrderWorkAssignments } from "@/components/orders/order-work-assignments"
+import { OrderItemImageUpload } from "@/components/orders/order-item-image-upload"
 import { PageHeader } from "@/components/shared/page-header"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,8 @@ import { formatCurrency, formatDate } from "@/lib/format"
 import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { resolveOrderImageUrls } from "@/lib/order-images"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
+import Image from "next/image"
+import { Upload } from "lucide-react"
 
 const workflowOptions = [
   "received",
@@ -252,6 +255,7 @@ export default async function OrderDetailPage({
                 <TableHead>Harga</TableHead>
                 <TableHead>Diskon</TableHead>
                 <TableHead>Subtotal</TableHead>
+                <TableHead>Gambar</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -269,11 +273,31 @@ export default async function OrderDetailPage({
                   <TableCell>{formatCurrency(Number(item.unitPrice))}</TableCell>
                   <TableCell>{formatCurrency(Number(item.discount))}</TableCell>
                   <TableCell>{formatCurrency(Number(item.total))}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {item.image ? (
+                        <a href={item.image} target="_blank" rel="noreferrer" className="block">
+                          <div className="relative h-20 w-20 overflow-hidden rounded-lg border bg-muted">
+                            <Image
+                              src={item.image}
+                              alt={item.serviceType.name}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          </div>
+                        </a>
+                      ) : null}
+                      {isEmployeeViewer ? null : (
+                        <OrderItemImageUpload orderItemId={item.id} imageUrl={item.image} />
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
               {order.items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
                     Belum ada item.
                   </TableCell>
                 </TableRow>

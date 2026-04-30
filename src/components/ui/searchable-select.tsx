@@ -174,7 +174,7 @@ export function SearchableSelect({
     const isEmpty = !loading && options.length === 0
 
     return (
-        <div className="relative space-y-1.5" ref={containerRef}>
+        <div className="relative " ref={containerRef}>
             {/* Hidden input untuk form submission */}
             <input type="hidden" name={name} value={selectedValue} />
 
@@ -193,7 +193,7 @@ export function SearchableSelect({
                 aria-expanded={open}
                 onClick={() => setOpen((prev) => !prev)}
                 className={cn(
-                    "flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background",
+                    "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm ring-offset-background",
                     "hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     "disabled:cursor-not-allowed disabled:opacity-50",
                     open && "ring-2 ring-ring ring-offset-2",
