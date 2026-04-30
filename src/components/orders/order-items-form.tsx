@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SearchableSelect, type SearchableOption } from "@/components/ui/searchable-select"
 import { Select } from "@/components/ui/select"
-import { Trash2, Upload, X } from "lucide-react"
+import { Trash2, X } from "lucide-react"
 
 type ServiceTypeOption = {
   id: string
@@ -400,9 +400,7 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                     </div>
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0"
+                      className="h-8 w-8 shrink-0 p-0"
                       onClick={() => {
                         setItems((prev) =>
                           prev.map((p, i) =>

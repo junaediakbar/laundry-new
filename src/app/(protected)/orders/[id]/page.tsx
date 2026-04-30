@@ -19,7 +19,6 @@ import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { resolveOrderImageUrls } from "@/lib/order-images"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 import Image from "next/image"
-import { Upload } from "lucide-react"
 
 const workflowOptions = [
   "received",
@@ -50,6 +49,7 @@ type OrderItemRow = {
   total: string
   lengthM?: string | null
   widthM?: string | null
+  image?: string | null
   serviceType: { name: string; unit: string }
   workAssignments: WorkAssignmentRow[]
 }

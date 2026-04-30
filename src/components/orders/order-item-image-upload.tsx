@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "react-toastify"
 
@@ -51,9 +51,7 @@ export function OrderItemImageUpload({ orderItemId, imageUrl }: OrderItemImageUp
       <label htmlFor={inputId} className="cursor-pointer">
         <Button
           type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 p-0"
           disabled={pending}
           onClick={(e) => {
             e.preventDefault()
