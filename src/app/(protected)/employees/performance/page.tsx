@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { OrderImageCell } from "@/components/employees/order-image-cell"
 import { backendFetch } from "@/lib/backend"
 import { formatCurrency } from "@/lib/format"
 import { getSession } from "@/lib/auth"
@@ -276,6 +277,7 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                 <TableHeader>
                   <TableRow>
                     <TableHead>No. Nota</TableHead>
+                    <TableHead>Gambar</TableHead>
                     <TableHead>Pelanggan</TableHead>
                     <TableHead>Tanggal</TableHead>
                     <TableHead>Status</TableHead>
@@ -296,6 +298,9 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                           {row.invoiceNumber}
                         </Link>
                       </TableCell>
+                      <TableCell>
+                        <OrderImageCell orderId={row.orderId} invoiceNumber={row.invoiceNumber} />
+                      </TableCell>
                       <TableCell>{row.customerName}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -315,7 +320,7 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                   ))}
                   {detailRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                         Belum ada data performa pada rentang tanggal ini.
                       </TableCell>
                     </TableRow>

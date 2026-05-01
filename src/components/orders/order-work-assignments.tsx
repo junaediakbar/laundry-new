@@ -5,11 +5,17 @@ import { toast } from "react-toastify"
 
 import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { inOwnerGroupForViewer, isOwnerDisplayName } from "@/lib/owner-group"
+import { resolveOrderImageUrls } from "@/lib/order-images"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Plus, RotateCcw, Save, Settings2, Trash2, X } from "lucide-react"
+
+function getBackendBaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8080"
+  return raw.endsWith("/") ? raw.slice(0, -1) : raw
+}
 
 type EmployeeOption = {
   id: string
@@ -36,6 +42,7 @@ type OrderItemRow = {
   quantity: Decimalish
   lengthM?: string | null
   widthM?: string | null
+  image?: string | null
   workAssignments: WorkAssignmentRow[]
 }
 
@@ -418,6 +425,25 @@ export function OrderWorkAssignments({
                 }
               })
 
+            const makeOnSubmit = (formData: FormData) => {
+              startTransition(async () => {
+                try {
+                  await upsertWorkAssignment(formData)
+                  toast.success("Tersimpan")
+                } catch (e) {
+                  const msg = e instanceof Error && e.message.trim() ? e.message : "Gagal menyimpan"
+                  toast.error(msg)
+                }
+              })
+            }
+
+            const makeGetPercent = (taskKey: string, fallback: number) => {
+              if (isEditing) return fallback
+              const fromAssignment = percentByTask.get(taskKey)
+              if (fromAssignment != null && Number.isFinite(fromAssignment)) return fromAssignment
+              return fallback
+            }
+
             return (
               <div key={item.id} className="rounded-lg border bg-background p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -583,37 +609,48 @@ export function OrderWorkAssignments({
                   </div>
                 ) : null}
 
+                {/* Task groups grid */}
                 <div className="mt-4 grid gap-6 lg:grid-cols-3">
-                  {template.groups.map((g) => (
-                    <TaskGroup
-                      key={g.id}
-                      title={g.title}
-                      tasks={g.tasks}
-                      itemId={item.id}
-                      orderId={orderId}
-                      employees={employees}
-                      selectedByItemAndTask={selectedByItemAndTask}
-                      pending={pending}
-                      lockFilledAssignmentsForEmployee={lockFilledAssignmentsForEmployee}
-                      getPercent={(taskKey, fallback) => {
-                        if (isEditing) return fallback
-                        const fromAssignment = percentByTask.get(taskKey)
-                        if (fromAssignment != null && Number.isFinite(fromAssignment)) return fromAssignment
-                        return fallback
-                      }}
-                      onSubmit={(formData) => {
-                        startTransition(async () => {
-                          try {
-                            await upsertWorkAssignment(formData)
-                            toast.success("Tersimpan")
-                          } catch (e) {
-                            const msg = e instanceof Error && e.message.trim() ? e.message : "Gagal menyimpan"
-                            toast.error(msg)
-                          }
-                        })
-                      }}
-                    />
-                  ))}
+                  {/* Jemput */}
+                  <TaskGroup
+                    title={template.groups[0]?.title ?? "Jemput"}
+                    tasks={template.groups[0]?.tasks ?? []}
+                    itemId={item.id}
+                    orderId={orderId}
+                    employees={employees}
+                    selectedByItemAndTask={selectedByItemAndTask}
+                    pending={pending}
+                    lockFilledAssignmentsForEmployee={lockFilledAssignmentsForEmployee}
+                    getPercent={makeGetPercent}
+                    onSubmit={makeOnSubmit}
+                  />
+                  {/* Antar */}
+                  <TaskGroup
+                    title={template.groups[1]?.title ?? "Antar"}
+                    tasks={template.groups[1]?.tasks ?? []}
+                    itemId={item.id}
+                    orderId={orderId}
+                    employees={employees}
+                    selectedByItemAndTask={selectedByItemAndTask}
+                    pending={pending}
+                    lockFilledAssignmentsForEmployee={lockFilledAssignmentsForEmployee}
+                    getPercent={makeGetPercent}
+                    onSubmit={makeOnSubmit}
+                  />
+                  {/* Produksi */}
+                  <TaskGroup
+                    title={template.groups[2]?.title ?? "Produksi"}
+                    tasks={template.groups[2]?.tasks ?? []}
+                    itemId={item.id}
+                    orderId={orderId}
+                    employees={employees}
+                    selectedByItemAndTask={selectedByItemAndTask}
+                    pending={pending}
+                    lockFilledAssignmentsForEmployee={lockFilledAssignmentsForEmployee}
+                    getPercent={makeGetPercent}
+                    onSubmit={makeOnSubmit}
+                  />
+                  {/* Lainnya (jika ada task di luar template) */}
                   {otherTasks.length > 0 ? (
                     <TaskGroup
                       title="Lainnya"
@@ -625,19 +662,31 @@ export function OrderWorkAssignments({
                       pending={pending}
                       lockFilledAssignmentsForEmployee={lockFilledAssignmentsForEmployee}
                       getPercent={(_, fallback) => fallback}
-                      onSubmit={(formData) => {
-                        startTransition(async () => {
-                          try {
-                            await upsertWorkAssignment(formData)
-                            toast.success("Tersimpan")
-                          } catch (e) {
-                            const msg = e instanceof Error && e.message.trim() ? e.message : "Gagal menyimpan"
-                            toast.error(msg)
-                          }
-                        })
-                      }}
+                      onSubmit={makeOnSubmit}
                     />
                   ) : null}
+                </div>
+
+                {/* Gambar item — full width di bawah semua kolom */}
+                <div className="mt-6 space-y-3">
+                  <p className="text-sm font-semibold">Gambar</p>
+                  {(() => {
+                    const images = resolveOrderImageUrls(getBackendBaseUrl(), item.image ?? null, null)
+                    const firstImage = images[0]
+                    return firstImage ? (
+                      <a href={firstImage} target="_blank" rel="noreferrer" className="block">
+                        <img
+                          src={firstImage}
+                          alt={item.serviceType.name}
+                          className="h-64 w-full rounded-md object-cover border border-border/50 hover:border-border/80 transition-colors cursor-pointer"
+                        />
+                      </a>
+                    ) : (
+                      <div className="h-64 w-full rounded-md border border-dashed border-border/50 bg-muted/30 flex items-center justify-center">
+                        <span className="text-xs text-muted-foreground">No img</span>
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )

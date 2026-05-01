@@ -30,7 +30,7 @@ export class BackendFetchError extends Error {
   }
 }
 
-function backendBaseUrl() {
+export function backendBaseUrl() {
   const raw = process.env.BACKEND_BASE_URL || 'http://localhost:8080';
   return raw.endsWith('/') ? raw.slice(0, -1) : raw;
 }
