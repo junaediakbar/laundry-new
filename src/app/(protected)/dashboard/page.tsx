@@ -1,6 +1,8 @@
 import { AlertCircle, ReceiptText, TrendingUp, Users } from "lucide-react"
 
 import { RevenueChart } from "@/components/dashboard/revenue-chart"
+import { EmployeePerformanceChart } from "@/components/dashboard/employee-performance-chart"
+import type { EmployeePerformancePoint } from "@/components/dashboard/employee-performance-chart"
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -205,6 +207,23 @@ async function StaffDashboard({ searchParams }: DashboardPageProps) {
     revenue: Number(p.revenue ?? 0),
   }))
 
+  const performanceData = await backendFetch<
+    Array<{
+      employeeId: string
+      employeeName: string
+      pickupAmount: string
+      workAmount: string
+      totalAmount: string
+    }>
+  >(`/api/v1/employees/performance?startDate=${encodeURIComponent(chosen.start)}&endDate=${encodeURIComponent(chosen.end)}`).catch(() => [])
+  const employeePerformanceData: EmployeePerformancePoint[] = (Array.isArray(performanceData) ? performanceData : []).map((p) => ({
+    employeeId: p.employeeId,
+    employeeName: p.employeeName,
+    pickupAmount: Number(p.pickupAmount ?? 0),
+    workAmount: Number(p.workAmount ?? 0),
+    totalAmount: Number(p.totalAmount ?? 0),
+  }))
+
   const totalRevenue = Number(summary.totalRevenue ?? 0)
 
   const cards = [
@@ -321,6 +340,16 @@ async function StaffDashboard({ searchParams }: DashboardPageProps) {
               Belum ada data pada bulan ini.
             </div>
           )}
+        </div>
+      </Card>
+
+      <Card className="mt-4">
+        <p className="text-sm font-medium">Grafik performa karyawan</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Bagian pendapatan karyawan dari pembagian tugas pada nota (pickup/antar dan kerja proses).
+        </p>
+        <div className="mt-4">
+          <EmployeePerformanceChart data={employeePerformanceData} month={chosen.month} />
         </div>
       </Card>
     </div>
