@@ -10,11 +10,9 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  Cell,
 } from "recharts"
 
 import { formatCurrency } from "@/lib/format"
-import { cn } from "@/lib/utils"
 
 export type EmployeePerformancePoint = {
   employeeId: string
@@ -98,8 +96,6 @@ export function EmployeePerformanceChart({
     }
   }
 
-  const pickupColor = "hsl(199 89% 48%)"
-  const workColor = "hsl(262 83% 58%)"
   const totalColor = "hsl(var(--primary))"
 
   const totalAll = chartData.reduce((sum, d) => sum + d.totalAmount, 0)

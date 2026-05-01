@@ -1,9 +1,8 @@
-import { ArrowLeft, Calendar, ReceiptText, Users } from "lucide-react"
+import { ArrowLeft, Calendar, ReceiptText } from "lucide-react"
 
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Select } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { backendFetch } from "@/lib/backend"
