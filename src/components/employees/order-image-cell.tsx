@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { backendFetch } from "@/lib/backend"
 import { resolveOrderImageUrls } from "@/lib/order-images"
 
 type OrderImageCellProps = {
@@ -20,6 +19,34 @@ function getBackendBaseUrl(): string {
   return raw.endsWith("/") ? raw.slice(0, -1) : raw
 }
 
+/** Client-side fetch with auth token from cookies */
+async function clientFetch<T>(path: string): Promise<T> {
+  const url = `${getBackendBaseUrl()}${path.startsWith("/") ? path : `/${path}`}`
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  }
+
+  // Get token from document.cookie (client-side)
+  const cookies = document.cookie.split(";")
+  const tokenCookie = cookies.find((c) => c.trim().startsWith("backend_token="))
+  if (tokenCookie) {
+    const token = tokenCookie.split("=")[1]?.trim()
+    if (token) headers["Authorization"] = `Bearer ${token}`
+  }
+
+  const res = await fetch(url, {
+    headers,
+    cache: "no-store",
+  })
+
+  if (!res.ok) {
+    throw new Error(`Request failed (${res.status})`)
+  }
+
+  return res.json() as Promise<T>
+}
+
 export function OrderImageCell({ orderId, invoiceNumber }: OrderImageCellProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [imageCount, setImageCount] = useState(0)
@@ -31,7 +58,7 @@ export function OrderImageCell({ orderId, invoiceNumber }: OrderImageCellProps) 
     async function fetchImage() {
       setLoading(true)
       try {
-        const data = await backendFetch<OrderDetail>(`/api/v1/orders/${orderId}`)
+        const data = await clientFetch<OrderDetail>(`/api/v1/orders/${orderId}`)
         if (cancelled) return
 
         const items = data?.items ?? []
