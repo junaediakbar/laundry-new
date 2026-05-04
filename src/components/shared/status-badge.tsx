@@ -58,7 +58,7 @@ export function StatusBadge({ type, value }: StatusBadgeProps) {
   const styles =
     type === "payment" ? paymentMap[value] : workflowMap[value] ?? "bg-muted text-foreground"
   return (
-    <Badge className={cn("border-0 px-2 py-1", styles)} variant="secondary">
+    <Badge className={cn("border-0 px-2 py-1 text-xs mx-auto text-center", styles)} variant="secondary">
       {type === "payment" ? paymentLabel(value) : workflowLabel(value)}
     </Badge>
   )
