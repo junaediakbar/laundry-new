@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { OrderImageCell } from "@/components/employees/order-image-cell"
 import { backendFetch } from "@/lib/backend"
 import { formatCurrency } from "@/lib/format"
+import { labelEmployeePerformanceTask } from "@/lib/employee-task-labels"
 import { getSession } from "@/lib/auth"
 import { inOwnerGroupForViewer, performanceRowIsOwnerLike } from "@/lib/owner-group"
 import Link from "next/link"
@@ -38,6 +39,7 @@ type DetailRow = {
   pickupAmount: string
   workAmount: string
   totalAmount: string
+  tasks?: { taskType: string; amount: string }[]
 }
 
 type Employee = { id: string; name: string; role?: string }
@@ -281,6 +283,7 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                     <TableHead>Pelanggan</TableHead>
                     <TableHead>Tanggal</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Detail tugas</TableHead>
                     <TableHead className="text-right">Antar Jemput</TableHead>
                     <TableHead className="text-right">Pengerjaan</TableHead>
                     <TableHead className="text-right">Total</TableHead>
@@ -313,6 +316,22 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(row.workflowStatus)}</TableCell>
+                      <TableCell className="max-w-[220px] align-top text-sm text-muted-foreground">
+                        {(row.tasks?.length ?? 0) > 0 ? (
+                          <ul className="list-inside list-disc space-y-0.5">
+                            {(row.tasks ?? []).map((t) => (
+                              <li key={t.taskType}>
+                                <span className="text-foreground">
+                                  {labelEmployeePerformanceTask(t.taskType)}
+                                </span>
+                                <span className="tabular-nums"> · {formatCurrency(Number(t.amount))}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(row.pickupAmount))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(row.workAmount))}</TableCell>
                       <TableCell className="text-right font-semibold">{formatCurrency(Number(row.totalAmount))}</TableCell>
@@ -320,7 +339,7 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                   ))}
                   {detailRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                         Belum ada data performa pada rentang tanggal ini.
                       </TableCell>
                     </TableRow>
