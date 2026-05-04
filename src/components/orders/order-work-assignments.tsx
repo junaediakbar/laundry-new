@@ -13,7 +13,7 @@ import { Select } from "@/components/ui/select"
 import { Plus, RotateCcw, Save, Settings2, Trash2, X } from "lucide-react"
 
 function getBackendBaseUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || "http://localhost:8080"
+  const raw = process.env.BACKEND_BASE_URL || "http://localhost:8080"
   return raw.endsWith("/") ? raw.slice(0, -1) : raw
 }
 

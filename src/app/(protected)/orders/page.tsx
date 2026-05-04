@@ -17,6 +17,20 @@ type OrdersPageProps = {
   }
 }
 
+/** Nomor urut kronologis: 1 = nota tertua, total = terbaru (hanya konsisten saat sort = created_at). */
+function orderRowNumber(
+  index: number,
+  rowOffset: number,
+  totalOrders: number,
+  sort: string,
+  dir: string,
+): number {
+  if (sort === "created_at" && dir === "desc") {
+    return totalOrders - rowOffset - index
+  }
+  return rowOffset + index + 1
+}
+
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const q = searchParams?.q?.trim()
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
@@ -46,6 +60,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
   const orders = result.items
   const totalOrders = result.total
+  const rowOffset = (page - 1) * pageSize
 
   const buildHref = (nextPage: number) => {
     const params = new URLSearchParams()
@@ -70,6 +85,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[1%] whitespace-nowrap text-center">No</TableHead>
                 <TableHead>Invoice</TableHead>
                 <TableHead>Pelanggan</TableHead>
                 <TableHead>Item</TableHead>
@@ -79,8 +95,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {orders.map((order) => (
+              {orders.map((order, index) => (
                 <TableRow key={order.id}>
+                  <TableCell className="whitespace-nowrap text-center text-muted-foreground tabular-nums">
+                    {orderRowNumber(index, rowOffset, totalOrders, sort, dir)}
+                  </TableCell>
                   <TableCell className="font-medium">{order.invoiceNumber}</TableCell>
                   <TableCell>{order.customer.name}</TableCell>
                   <TableCell>
@@ -109,7 +128,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               ))}
               {orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
                     Belum ada data pesanan.
                   </TableCell>
                 </TableRow>
