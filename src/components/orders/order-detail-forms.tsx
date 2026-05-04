@@ -13,6 +13,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatCurrency, formatDate } from "@/lib/format"
 import { workflowLabel } from "@/components/shared/status-badge"
 import { paymentMethodLabel } from "@/lib/payment-method"
+import {
+  PICKUP_DELIVERY_FORM_OPTIONS,
+  pickupDeliveryToFormValue,
+} from "@/lib/pickup-delivery"
 
 type PaymentRow = {
   id: string
@@ -26,7 +30,9 @@ type OrderDetailFormsProps = {
   orderId: string
   workflowStatus: string
   workflowOptions: string[]
+  pickupDelivery: boolean | null
   updateWorkflow: (formData: FormData) => Promise<void>
+  updatePickupDelivery: (formData: FormData) => Promise<void>
   createPayment: (formData: FormData) => Promise<void>
   deletePayment: (formData: FormData) => Promise<void>
   payments: PaymentRow[]
@@ -36,20 +42,23 @@ export function OrderDetailForms({
   orderId,
   workflowStatus,
   workflowOptions,
+  pickupDelivery,
   updateWorkflow,
+  updatePickupDelivery,
   createPayment,
   deletePayment,
   payments,
 }: OrderDetailFormsProps) {
   const router = useRouter()
   const [savingStatus, startSavingStatus] = useTransition()
+  const [savingPickup, startSavingPickup] = useTransition()
   const [savingPayment, startSavingPayment] = useTransition()
   const [deletingPayment, startDeletingPayment] = useTransition()
   const paymentFormRef = useRef<HTMLFormElement | null>(null)
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-3 lg:grid-cols-2">
         <Card>
           <form
             action={(formData) => {
@@ -119,6 +128,46 @@ export function OrderDetailForms({
             </div>
             <Button type="submit" disabled={savingPayment}>
               {savingPayment ? "Menyimpan..." : "Simpan Pembayaran"}
+            </Button>
+          </form>
+        </Card>
+
+        <Card>
+          <form
+            action={(formData) => {
+              startSavingPickup(async () => {
+                try {
+                  await updatePickupDelivery(formData)
+                  toast.success("Antar jemput disimpan")
+                  router.refresh()
+                } catch (e) {
+                  const msg =
+                    e instanceof Error && e.message.trim() ? e.message : "Gagal menyimpan antar jemput"
+                  toast.error(msg)
+                }
+              })
+            }}
+            className="space-y-3"
+          >
+            <h2 className="font-semibold">Antar jemput</h2>
+            <div className="space-y-2">
+              <Label htmlFor={`pickupDelivery-${orderId}`}>Pilihan</Label>
+              <Select
+                key={`pickup-${orderId}-${pickupDeliveryToFormValue(pickupDelivery)}`}
+                id={`pickupDelivery-${orderId}`}
+                name="pickupDelivery"
+                defaultValue={pickupDeliveryToFormValue(pickupDelivery)}
+                disabled={savingPickup}
+              >
+                {PICKUP_DELIVERY_FORM_OPTIONS.map((opt) => (
+                  <option key={opt.value === "" ? "unknown" : opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <Button type="submit" disabled={savingPickup}>
+              {savingPickup ? "Menyimpan..." : "Simpan"}
             </Button>
           </form>
         </Card>

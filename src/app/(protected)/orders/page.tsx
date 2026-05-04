@@ -5,8 +5,9 @@ import { ToastQuery } from "@/components/shared/toast-query"
 import { Card } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { backendFetch } from "@/lib/backend"
+import { BackendFetchError, backendFetch } from "@/lib/backend"
 import { OrdersFilter } from "@/components/orders/orders-filter"
+import { pickupDeliveryLabel } from "@/lib/pickup-delivery"
 
 type OrdersPageProps = {
   searchParams?: {
@@ -38,7 +39,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const dir = (searchParams?.dir ?? "desc").trim()
   const pageSize = 20
 
-  const result = await backendFetch<{
+  type ListShape = {
     items: Array<{
       id: string
       invoiceNumber: string
@@ -49,14 +50,26 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       total: string
       paymentStatus: string
       workflowStatus: string
+      pickupDelivery: boolean | null
     }>
     total: number
-  }>(
-    `/api/v1/orders?q=${encodeURIComponent(q ?? "")}&page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}&dir=${encodeURIComponent(dir)}`,
-  ).catch(() => ({
-    items: [],
-    total: 0,
-  }))
+  }
+
+  let result: ListShape = { items: [], total: 0 }
+  let listError: string | null = null
+  try {
+    result = await backendFetch<ListShape>(
+      `/api/v1/orders?q=${encodeURIComponent(q ?? "")}&page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}&dir=${encodeURIComponent(dir)}`,
+    )
+  } catch (e) {
+    const msg =
+      e instanceof BackendFetchError
+        ? e.message
+        : e instanceof Error
+          ? e.message
+          : "Gagal memuat daftar nota"
+    listError = msg
+  }
 
   const orders = result.items
   const totalOrders = result.total
@@ -80,6 +93,18 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       {/* Filter interaktif — client component dengan debounce */}
       <OrdersFilter defaultQ={q} defaultSort={sort} defaultDir={dir} />
 
+      {listError ? (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <p className="text-sm font-medium text-destructive">Tidak bisa memuat daftar nota</p>
+          <p className="mt-2 text-sm text-muted-foreground">{listError}</p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Dashboard bisa tetap menampilkan angka ringkasan meski endpoint daftar gagal (misalnya query membutuhkan
+            kolom DB yang belum ada). Jalankan migrasi backend: dari folder <code className="rounded bg-muted px-1">backend</code>{" "}
+            jalankan <code className="rounded bg-muted px-1">go run ./cmd/migrate</code>, lalu restart API.
+          </p>
+        </Card>
+      ) : null}
+
       <Card className="p-0">
         <div className="overflow-x-auto">
           <Table>
@@ -89,6 +114,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                 <TableHead>Invoice</TableHead>
                 <TableHead>Pelanggan</TableHead>
                 <TableHead>Item</TableHead>
+                <TableHead className="whitespace-nowrap">Antar jemput</TableHead>
                 <TableHead>Pembayaran</TableHead>
                 <TableHead>Workflow</TableHead>
                 <TableHead className="w-[1%]" />
@@ -110,6 +136,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                       <p className="text-xs text-muted-foreground">{order.itemCount} item</p>
                     </div>
                   </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm">
+                    {pickupDeliveryLabel(order.pickupDelivery)}
+                  </TableCell>
                   <TableCell>
                     <StatusBadge type="payment" value={order.paymentStatus} />
                   </TableCell>
@@ -126,9 +155,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                   </TableCell>
                 </TableRow>
               ))}
-              {orders.length === 0 ? (
+              {!listError && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                     Belum ada data pesanan.
                   </TableCell>
                 </TableRow>

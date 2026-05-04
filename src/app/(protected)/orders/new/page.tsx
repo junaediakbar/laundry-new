@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { backendFetch } from "@/lib/backend"
+import { PICKUP_DELIVERY_FORM_OPTIONS } from "@/lib/pickup-delivery"
 
 export default async function NewOrderPage() {
   const [customerPaged, serviceTypes] = await Promise.all([
@@ -53,16 +55,40 @@ export default async function NewOrderPage() {
         <form action={createOrderAction} encType="multipart/form-data" className="space-y-4">
           <CustomerSelect defaultCustomerId={customerOptions[0]?.id} />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="receivedDate">Tanggal &amp; jam masuk</Label>
-              <Input id="receivedDate" name="receivedDate" type="datetime-local" />
+          <Card>
+            <div className="space-y-3">
+              <h2 className="font-semibold">Jadwal</h2>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="receivedDate">Tanggal &amp; jam masuk</Label>
+                  <Input id="receivedDate" name="receivedDate" type="datetime-local" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="completedDate">Tanggal &amp; jam selesai</Label>
+                  <Input id="completedDate" name="completedDate" type="datetime-local" />
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="completedDate">Tanggal &amp; jam selesai</Label>
-              <Input id="completedDate" name="completedDate" type="datetime-local" />
+          </Card>
+
+          <Card>
+            <div className="space-y-3">
+              <h2 className="font-semibold">Antar jemput</h2>
+              <div className="space-y-2">
+                <Label htmlFor="pickupDelivery">Pilihan</Label>
+                <Select id="pickupDelivery" name="pickupDelivery" defaultValue="">
+                  {PICKUP_DELIVERY_FORM_OPTIONS.map((opt) => (
+                    <option key={opt.value === "" ? "unknown" : opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Gunakan &quot;- (belum tahu)&quot; bila belum pasti.
+              </p>
             </div>
-          </div>
+          </Card>
 
           <OrderItemsForm serviceTypes={serviceTypeOptions} />
 

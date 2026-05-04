@@ -97,6 +97,10 @@ export const orderSchema = z.object({
     )
     .min(1, 'Minimal 1 item pesanan'),
   note: z.string().optional(),
+  /** Kosong = belum tahu; string true atau false dari select */
+  pickupDelivery: z
+    .union([z.literal(''), z.literal('true'), z.literal('false')])
+    .transform((v): boolean | null => (v === '' ? null : v === 'true')),
 });
 
 export const paymentSchema = z.object({

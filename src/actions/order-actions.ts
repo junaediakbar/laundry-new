@@ -44,6 +44,7 @@ export async function createOrderAction(formData: FormData) {
     completedDate: formData.get('completedDate'),
     items,
     note: formData.get('note'),
+    pickupDelivery: formData.get('pickupDelivery'),
   });
 
   if (!parsed.success) {
@@ -81,6 +82,12 @@ export async function createOrderAction(formData: FormData) {
   upload.set('receivedDate', receivedDate);
   upload.set('completedDate', completedDate);
   upload.set('note', parsed.data.note || '');
+  const pd = parsed.data.pickupDelivery;
+  if (pd === null) {
+    upload.set('pickupDelivery', '');
+  } else {
+    upload.set('pickupDelivery', pd ? 'true' : 'false');
+  }
   // Kirim item hasil parse Zod agar lengthM/widthM selaras dengan validasi (bukan string mentah form).
   upload.set('items', JSON.stringify(parsed.data.items));
   for (const file of imageFiles) {
@@ -195,6 +202,28 @@ export async function updateWorkflowAction(
       throw new Error(e.message);
     }
     throw new Error('Gagal mengubah status workflow');
+  }
+
+  revalidatePath(`/orders/${orderId}`);
+  revalidatePath('/orders');
+}
+
+export async function updatePickupDeliveryAction(
+  orderId: string,
+  pickupDelivery: boolean | null,
+) {
+  try {
+    await backendFetch<{ ok: boolean }>(`/api/v1/orders/${orderId}/pickup-delivery`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pickupDelivery }),
+    });
+  } catch (e) {
+    if (e instanceof BackendFetchError) {
+      if (e.status === 401) redirect('/login?error=Silakan%20login%20ulang');
+      throw new Error(e.message);
+    }
+    throw new Error('Gagal menyimpan antar jemput');
   }
 
   revalidatePath(`/orders/${orderId}`);

@@ -1,7 +1,12 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
-import { createPaymentAction, deletePaymentAction, updateWorkflowAction } from "@/actions/order-actions"
+import {
+  createPaymentAction,
+  deletePaymentAction,
+  updatePickupDeliveryAction,
+  updateWorkflowAction,
+} from "@/actions/order-actions"
 import { OrderDeleteButton } from "@/components/orders/order-delete-button"
 import { upsertWorkAssignmentAction } from "@/actions/work-actions"
 import { OrderDetailForms } from "@/components/orders/order-detail-forms"
@@ -17,6 +22,7 @@ import { getSession } from "@/lib/auth"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { resolveOrderImageUrls } from "@/lib/order-images"
+import { pickupDeliveryLabel } from "@/lib/pickup-delivery"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 import Image from "next/image"
 
@@ -69,6 +75,7 @@ type OrderDetail = {
   total: string
   paymentStatus: string
   workflowStatus: string
+  pickupDelivery: boolean | null
   receivedDate: string
   completedDate: string | null
   pickupDate: string | null
@@ -138,6 +145,14 @@ export default async function OrderDetailPage({
     "use server"
     const workflowStatus = String(formData.get("workflowStatus") ?? "")
     await updateWorkflowAction(orderId, workflowStatus)
+  }
+
+  async function updatePickupDelivery(formData: FormData) {
+    "use server"
+    const raw = String(formData.get("pickupDelivery") ?? "")
+    const pickupDelivery: boolean | null =
+      raw === "true" ? true : raw === "false" ? false : null
+    await updatePickupDeliveryAction(orderId, pickupDelivery)
   }
 
   const itemCount = order.items.length
@@ -234,6 +249,10 @@ export default async function OrderDetailPage({
                 {order.pickupDate ? formatDate(order.pickupDate) : "-"}
               </p>
             </div>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Antar jemput</p>
+              <p className="text-sm font-medium">{pickupDeliveryLabel(order.pickupDelivery)}</p>
+            </div>
           </div>
         </Card>
         <Card>
@@ -327,7 +346,9 @@ export default async function OrderDetailPage({
         orderId={orderId}
         workflowStatus={order.workflowStatus}
         workflowOptions={workflowOptions}
+        pickupDelivery={order.pickupDelivery}
         updateWorkflow={updateWorkflow}
+        updatePickupDelivery={updatePickupDelivery}
         createPayment={createPaymentAction}
         deletePayment={deletePaymentAction}
         payments={order.payments}
