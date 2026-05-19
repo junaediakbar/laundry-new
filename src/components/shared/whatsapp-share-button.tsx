@@ -12,7 +12,10 @@ import {
 import { paymentLabel, workflowLabel } from "@/components/shared/status-badge"
 import { Share2 } from "lucide-react"
 
-const LAUNDRY_BRAND = "Trees Clean Laundry - 216"
+function laundryBrandLine(notaNumber: number) {
+  if (notaNumber > 0) return `Trees Clean Laundry - ${notaNumber}`
+  return "Trees Clean Laundry"
+}
 
 const TERMS_AND_CONDITIONS = `*Syarat dan Ketentuan Laundry:
 
@@ -39,6 +42,7 @@ type WhatsAppItem = {
 }
 
 type WhatsAppShareButtonProps = {
+  notaNumber: number
   invoiceNumber: string
   customerName: string
   customerPhone?: string | null
@@ -139,7 +143,7 @@ export function buildReceiptWhatsAppMessage(p: WhatsAppShareButtonProps): string
   const remaining = Math.max(total - paid, 0)
   const items = p.items.slice(0, 10)
 
-  const headerLines = [LAUNDRY_BRAND, `Kepada Yth. ${p.customerName}`]
+  const headerLines = [laundryBrandLine(p.notaNumber), `Kepada Yth. ${p.customerName}`]
   if (p.customerPhone?.trim()) {
     headerLines.push(formatPhoneDisplay(p.customerPhone))
   }

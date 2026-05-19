@@ -35,6 +35,7 @@ function formatPercentId(pct: number) {
 type PublicReceipt = {
   publicToken: string
   invoiceNumber: string
+  notaNumber: number
   customerName: string
   customerPhone?: string | null
   total: string
@@ -96,12 +97,15 @@ export default async function ReceiptPage({ params }: { params: { token: string 
       <Card className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <p className="text-lg font-semibold">Trees Clean Laundry - 216</p>
+            <p className="text-lg font-semibold">
+              Trees Clean Laundry{receipt.notaNumber > 0 ? ` - ${receipt.notaNumber}` : ""}
+            </p>
             <p className="break-all text-sm text-muted-foreground">{receipt.invoiceNumber}</p>
           </div>
           <div className="flex flex-wrap gap-2 sm:justify-end">
             <WhatsAppShareButton
               label="WhatsApp"
+              notaNumber={receipt.notaNumber}
               invoiceNumber={receipt.invoiceNumber}
               customerName={receipt.customerName}
               customerPhone={receipt.customerPhone ?? null}
