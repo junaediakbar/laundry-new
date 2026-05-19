@@ -1,6 +1,6 @@
 import Link from "next/link"
 
-import { createOrderAction } from "@/actions/order-actions"
+import { CreateOrderForm } from "@/components/orders/create-order-form"
 import { CustomerSelect } from "@/components/orders/customer-select"
 import { OrderItemsForm } from "@/components/orders/order-items-form"
 import { PageHeader } from "@/components/shared/page-header"
@@ -52,7 +52,7 @@ export default async function NewOrderPage() {
       <ToastQuery errorParam="error" errorMessageFallback="Gagal membuat nota" />
       <PageHeader title="Tambah Nota" description="Satu nota bisa memiliki beberapa item pesanan." />
       <Card className="max-w-2xl">
-        <form action={createOrderAction} encType="multipart/form-data" className="space-y-4">
+        <CreateOrderForm>
           <CustomerSelect defaultCustomerId={customerOptions[0]?.id} />
 
           <Card>
@@ -109,7 +109,7 @@ export default async function NewOrderPage() {
               </Button>
             </Link>
           </div>
-        </form>
+        </CreateOrderForm>
       </Card>
     </div>
   )

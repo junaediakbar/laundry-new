@@ -59,21 +59,6 @@ export async function createOrderAction(formData: FormData) {
     .filter((f): f is File => f instanceof File && f.size > 0)
     .slice(0, 3);
 
-  // Extract item images from FormData (item-images-0, item-images-1, etc.)
-  const itemImages: File[] = [];
-  let itemIndex = 0;
-  while (true) {
-    const files = formData.getAll(`item-images-${itemIndex}`);
-    const validFile = files.find((f): f is File => f instanceof File && f.size > 0);
-    if (validFile) {
-      itemImages.push(validFile);
-    } else if (files.length === 0) {
-      // No more items
-      break;
-    }
-    itemIndex++;
-  }
-
   const receivedDate = normalizeWitaDateTimeInput(parsed.data.receivedDate);
   const completedDate = normalizeWitaDateTimeInput(parsed.data.completedDate);
 
@@ -103,30 +88,29 @@ export async function createOrderAction(formData: FormData) {
       body: upload,
     });
 
-    // Upload item images after order is created
-    if (itemImages.length > 0 && orderResponse.items) {
-      for (let i = 0; i < itemImages.length && i < orderResponse.items.length; i++) {
-        const file = itemImages[i];
-        const orderItemId = orderResponse.items[i]?.id;
-        if (file && orderItemId) {
-          try {
-            const itemImageUpload = new FormData();
-            itemImageUpload.append('image', file);
-            await backendFetch<{ imageUrl: string }>(
-              `/api/v1/orders/items/${orderItemId}/image`,
-              {
-                method: 'POST',
-                body: itemImageUpload,
-              },
-            );
-          } catch (itemImageError) {
-            // Log error but don't fail the entire order creation
-            console.error('Failed to upload item image', {
-              orderItemId,
-              error: itemImageError,
-            });
-          }
-        }
+    // Upload gambar per baris: indeks form harus sama dengan urutan item di response API.
+    const itemCount = parsed.data.items.length;
+    for (let i = 0; i < itemCount; i++) {
+      const files = formData.getAll(`item-images-${i}`);
+      const file = files.find((f): f is File => f instanceof File && f.size > 0);
+      const orderItemId = orderResponse.items[i]?.id;
+      if (!file || !orderItemId) continue;
+      try {
+        const itemImageUpload = new FormData();
+        itemImageUpload.append('image', file);
+        await backendFetch<{ imageUrl: string }>(
+          `/api/v1/orders/items/${orderItemId}/image`,
+          {
+            method: 'POST',
+            body: itemImageUpload,
+          },
+        );
+      } catch (itemImageError) {
+        console.error('Failed to upload item image', {
+          itemIndex: i,
+          orderItemId,
+          error: itemImageError,
+        });
       }
     }
   } catch (e) {

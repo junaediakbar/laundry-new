@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { useRegisterOrderItemImages } from "@/components/orders/create-order-form"
 import Image from "next/image"
 import { isM2AreaUnit } from "@/lib/order-item-display"
 import { Button } from "@/components/ui/button"
@@ -70,9 +71,14 @@ function formatIdr(value: number) {
 }
 
 export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
+  const registerItemImages = useRegisterOrderItemImages()
   const [items, setItems] = useState<OrderItemDraft[]>([
     { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0, discountMode: "fixed", imageFile: null },
   ])
+
+  useEffect(() => {
+    registerItemImages?.(items.map((it) => it.imageFile))
+  }, [items, registerItemImages])
 
   const total = useMemo(() => {
     return items.reduce((sum, item) => {
@@ -368,7 +374,6 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
                 <Label htmlFor={`item-image-${index}`}>Gambar Item   (opsional)</Label>
                 <Input
                   id={`item-image-${index}`}
-                  name={`item-images-${index}`}
                   type="file"
                   accept="image/*"
                   onChange={(e) => {
