@@ -8,7 +8,7 @@ const paymentMap: Record<string, string> = {
 }
 
 const paymentLabels: Record<string, string> = {
-  unpaid: "Belum lunas",
+  unpaid: "Belum Lunas",
   partial: "Sebagian",
   paid: "Lunas",
 }

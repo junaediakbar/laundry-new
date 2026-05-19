@@ -47,3 +47,23 @@ export function formatDate(value: Date | string) {
     timeZone: APP_TIME_ZONE,
   }).format(date);
 }
+
+/** Format struk WA: `18 Mei 2026, 18.00` (WITA). */
+export function formatReceiptDateTime(value: Date | string) {
+  const date = toDateAssumeWita(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  const datePart = new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: APP_TIME_ZONE,
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: APP_TIME_ZONE,
+  }).format(date);
+  const time = timePart.replace(':', '.');
+  return `${datePart}, ${time}`;
+}
