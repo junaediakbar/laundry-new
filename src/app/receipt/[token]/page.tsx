@@ -264,7 +264,7 @@ export default async function ReceiptPage({ params }: { params: { token: string 
           <p className="mb-1 font-medium">PERHATIAN:</p>
           <ol className="ml-4 list-decimal space-y-1">
             <li>Pengambilan barang harap menunjukkan nota</li>
-            <li>Penyelesaian cucian reguler 5 hari dan maksimal 7 hari</li>
+            <li>Penyelesaian cucian reguler maksimal 7 hari</li>
             <li>Layanan antar jemput, pengantaran menyesuaikan jalur antar jemput/jadwal delivery</li>
             <li>Layanan antar jemput hangus jika setelah 1 (satu) bulan (terhitung tanggal saat cucian diterima) dan terjadi gagal pengantaran karena belum dibayar/atau tidak ada pihak customer di tempat pengantaran</li>
             <li>1 (satu) bulan terhitung dari tanggal cucian diterima barang belum diambil/gagal antar, dikenakan biaya penitipan 10% dari harga cucian, dan jika rusak/hilang tidak diganti</li>

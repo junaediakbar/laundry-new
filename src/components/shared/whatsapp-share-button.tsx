@@ -21,7 +21,7 @@ const TERMS_AND_CONDITIONS = `*Syarat dan Ketentuan Laundry:
 
 PERHATIAN:
 1. Pengambilan barang harap menunjukkan nota
-2. Penyelesaian cucian reguler 5 hari dan maksimal 7 hari
+2. Penyelesaian cucian reguler maksimal 7 hari
 3. Layanan antar jemput, pengantaran menyesuaikan jalur antar jemput/jadwal delivery
 4. Layanan antar jemput hangus jika setelah 1 (satu) bulan (terhitung tanggal saat cucian diterima) dan terjadi gagal pengantaran karena belum dibayar/atau tidak ada pihak customer di tempat pengantaran
 5. 1 (satu) bulan terhitung dari tanggal cucian diterima barang belum diambil/gagal antar, dikenakan biaya penitipan 10% dari harga cucian, dan jika rusak/hilang tidak diganti
