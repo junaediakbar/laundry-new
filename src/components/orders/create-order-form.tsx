@@ -5,18 +5,34 @@ import {
   useCallback,
   useContext,
   useRef,
+  useState,
   type FormEvent,
   type ReactNode,
 } from "react"
 
 import { createOrderAction } from "@/actions/order-actions"
+import type { DeliveryServiceCategory } from "@/lib/delivery-service"
 
 type RegisterItemImages = (files: (File | null)[]) => void
 
 const ItemImagesContext = createContext<RegisterItemImages | null>(null)
 
+type CreateOrderPricingContextValue = {
+  deliveryCategory: DeliveryServiceCategory
+  setDeliveryCategory: (category: DeliveryServiceCategory) => void
+  itemsSubtotal: number
+  setItemsSubtotal: (subtotal: number) => void
+}
+
+const CreateOrderPricingContext =
+  createContext<CreateOrderPricingContextValue | null>(null)
+
 export function useRegisterOrderItemImages() {
   return useContext(ItemImagesContext)
+}
+
+export function useCreateOrderPricing() {
+  return useContext(CreateOrderPricingContext)
 }
 
 type CreateOrderFormProps = {
@@ -29,6 +45,9 @@ type CreateOrderFormProps = {
  */
 export function CreateOrderForm({ children }: CreateOrderFormProps) {
   const itemImageFilesRef = useRef<(File | null)[]>([])
+  const [deliveryCategory, setDeliveryCategory] =
+    useState<DeliveryServiceCategory>("reguler")
+  const [itemsSubtotal, setItemsSubtotal] = useState(0)
 
   const registerItemImageFiles = useCallback<RegisterItemImages>((files) => {
     itemImageFilesRef.current = files
@@ -55,10 +74,19 @@ export function CreateOrderForm({ children }: CreateOrderFormProps) {
   }
 
   return (
-    <ItemImagesContext.Provider value={registerItemImageFiles}>
-      <form encType="multipart/form-data" className="space-y-4" onSubmit={handleSubmit}>
-        {children}
-      </form>
-    </ItemImagesContext.Provider>
+    <CreateOrderPricingContext.Provider
+      value={{
+        deliveryCategory,
+        setDeliveryCategory,
+        itemsSubtotal,
+        setItemsSubtotal,
+      }}
+    >
+      <ItemImagesContext.Provider value={registerItemImageFiles}>
+        <form encType="multipart/form-data" className="space-y-4" onSubmit={handleSubmit}>
+          {children}
+        </form>
+      </ItemImagesContext.Provider>
+    </CreateOrderPricingContext.Provider>
   )
 }

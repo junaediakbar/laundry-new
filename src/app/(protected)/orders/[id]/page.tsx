@@ -22,6 +22,11 @@ import { getSession } from "@/lib/auth"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { resolveOrderImageUrls } from "@/lib/order-images"
+import {
+  applyDeliverySurcharge,
+  formatExpediteServiceDisplay,
+  formatSurchargePercent,
+} from "@/lib/delivery-service"
 import { pickupDeliveryLabel } from "@/lib/pickup-delivery"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 import Image from "next/image"
@@ -76,6 +81,8 @@ type OrderDetail = {
   paymentStatus: string
   workflowStatus: string
   pickupDelivery: boolean | null
+  deliveryServiceCategory?: string | null
+  deliveryEstimateDays?: number | null
   receivedDate: string
   completedDate: string | null
   pickupDate: string | null
@@ -140,6 +147,11 @@ export default async function OrderDetailPage({
   const remaining = Math.max(totalIdr - paidIdr, 0)
   const paymentStatus =
     totalIdr <= 0 || paidIdr >= totalIdr ? "paid" : paidIdr > 0 ? "partial" : "unpaid"
+  const itemsSubtotal = order.items.reduce((sum, item) => sum + Number(item.total), 0)
+  const pricing = applyDeliverySurcharge(
+    itemsSubtotal,
+    order.deliveryServiceCategory,
+  )
 
   async function updateWorkflow(formData: FormData) {
     "use server"
@@ -222,6 +234,20 @@ export default async function OrderDetailPage({
               <p className="text-sm font-medium">{itemCount} item</p>
             </div>
             <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">Subtotal item</p>
+              <p className="text-sm font-medium">{formatCurrency(itemsSubtotal)}</p>
+            </div>
+            {pricing.surchargePercent > 0 ? (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  Tambahan percepatan ({formatSurchargePercent(pricing.surchargePercent)})
+                </p>
+                <p className="text-sm font-medium">
+                  {formatCurrency(pricing.surchargeAmount)}
+                </p>
+              </div>
+            ) : null}
+            <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Total</p>
               <p className="text-sm font-medium">{formatCurrency(Number(order.total))}</p>
             </div>
@@ -247,6 +273,15 @@ export default async function OrderDetailPage({
               <p className="text-sm text-muted-foreground">Diambil</p>
               <p className="text-sm font-medium">
                 {order.pickupDate ? formatDate(order.pickupDate) : "-"}
+              </p>
+            </div>
+            <div className="space-y-1 sm:col-span-2">
+              <p className="text-sm text-muted-foreground">Layanan percepatan</p>
+              <p className="text-sm font-medium">
+                {formatExpediteServiceDisplay(
+                  order.deliveryServiceCategory,
+                  order.deliveryEstimateDays,
+                )}
               </p>
             </div>
             <div className="space-y-1">

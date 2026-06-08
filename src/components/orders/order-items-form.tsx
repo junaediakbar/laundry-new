@@ -1,7 +1,10 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { useRegisterOrderItemImages } from "@/components/orders/create-order-form"
+import {
+  useCreateOrderPricing,
+  useRegisterOrderItemImages,
+} from "@/components/orders/create-order-form"
 import Image from "next/image"
 import { isM2AreaUnit } from "@/lib/order-item-display"
 import { Button } from "@/components/ui/button"
@@ -72,6 +75,7 @@ function formatIdr(value: number) {
 
 export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
   const registerItemImages = useRegisterOrderItemImages()
+  const pricing = useCreateOrderPricing()
   const [items, setItems] = useState<OrderItemDraft[]>([
     { serviceTypeId: "", quantity: 1, unitPrice: 0, discount: 0, discountMode: "fixed", imageFile: null },
   ])
@@ -80,13 +84,17 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
     registerItemImages?.(items.map((it) => it.imageFile))
   }, [items, registerItemImages])
 
-  const total = useMemo(() => {
+  const itemsSubtotal = useMemo(() => {
     return items.reduce((sum, item) => {
       const d = discountAsRupiah(item)
       const lineTotal = lineSubtotal(item) - d
       return sum + Math.max(lineTotal, 0)
     }, 0)
   }, [items])
+
+  useEffect(() => {
+    pricing?.setItemsSubtotal(itemsSubtotal)
+  }, [itemsSubtotal, pricing])
 
   const serialized = useMemo(
     () => JSON.stringify(items.map((it) => toApiPayloadItem(it, serviceTypes))),
@@ -430,11 +438,6 @@ export function OrderItemsForm({ serviceTypes }: OrderItemsFormProps) {
             </div>
           )
         })}
-      </div>
-
-      <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
-        <p className="text-sm font-semibold">Total Nota</p>
-        <p className="text-sm font-semibold">Rp {formatIdr(total)}</p>
       </div>
     </div>
   )

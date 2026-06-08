@@ -101,6 +101,10 @@ export const orderSchema = z.object({
   pickupDelivery: z
     .union([z.literal(''), z.literal('true'), z.literal('false')])
     .transform((v): boolean | null => (v === '' ? null : v === 'true')),
+  deliveryServiceCategory: z.enum(
+    ['express_1', 'express_2', 'express_3', 'cepat', 'reguler'],
+    { message: 'Kategori layanan percepatan wajib dipilih' },
+  ),
 });
 
 export const paymentSchema = z.object({

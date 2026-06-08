@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { backendFetch } from "@/lib/backend"
+import { DeliveryServiceSelect } from "@/components/orders/delivery-service-select"
+import { OrderPricingSummary } from "@/components/orders/order-pricing-summary"
 import { PICKUP_DELIVERY_FORM_OPTIONS } from "@/lib/pickup-delivery"
 
 export default async function NewOrderPage() {
@@ -91,6 +93,15 @@ export default async function NewOrderPage() {
           </Card>
 
           <OrderItemsForm serviceTypes={serviceTypeOptions} />
+
+          <Card>
+            <div className="space-y-3">
+              <h2 className="font-semibold">Layanan percepatan</h2>
+              <DeliveryServiceSelect />
+            </div>
+          </Card>
+
+          <OrderPricingSummary />
 
           <div className="space-y-2">
             <Label htmlFor="images">Gambar nota (opsional, maks. 3)</Label>

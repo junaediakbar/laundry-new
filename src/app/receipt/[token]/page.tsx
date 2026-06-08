@@ -12,6 +12,11 @@ import { formatOrderItemQtyDescription } from "@/lib/order-item-display"
 import { resolveOrderImageUrls } from "@/lib/order-images"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 import { workflowLabel, paymentLabel } from "@/components/shared/status-badge"
+import {
+  applyDeliverySurcharge,
+  formatExpediteServiceDisplay,
+  formatSurchargePercent,
+} from "@/lib/delivery-service"
 
 function lineGrossBeforeDiscount(quantity: number, unitPrice: number) {
   return Math.max(quantity * unitPrice, 0)
@@ -48,6 +53,8 @@ type PublicReceipt = {
   image?: string | null
   images?: string[] | null
   note?: string | null
+  deliveryServiceCategory?: string | null
+  deliveryEstimateDays?: number | null
   items: Array<{
     serviceName: string
     unit: string
@@ -91,6 +98,11 @@ export default async function ReceiptPage({ params }: { params: { token: string 
   const total = Number(receipt.total)
   const paid = Number(receipt.paidAmount)
   const remaining = Math.max(total - paid, 0)
+  const itemsSubtotal = receipt.items.reduce((sum, it) => sum + Number(it.total), 0)
+  const pricing = applyDeliverySurcharge(
+    itemsSubtotal,
+    receipt.deliveryServiceCategory,
+  )
 
   return (
     <div className="mx-auto max-w-xl p-4">
@@ -125,6 +137,8 @@ export default async function ReceiptPage({ params }: { params: { token: string 
               paidAmount={receipt.paidAmount}
               paymentStatus={receipt.paymentStatus}
               workflowStatus={receipt.workflowStatus}
+              deliveryServiceCategory={receipt.deliveryServiceCategory ?? null}
+              deliveryEstimateDays={receipt.deliveryEstimateDays ?? null}
             />
             <CopyLinkButton />
             <PrintButton />
@@ -152,6 +166,15 @@ export default async function ReceiptPage({ params }: { params: { token: string 
               <span className="font-medium">{formatDate(receipt.pickupDate)}</span>
             </div>
           ) : null}
+          <div className="flex items-start justify-between gap-4">
+            <span className="text-muted-foreground">Layanan percepatan</span>
+            <span className="text-right font-medium">
+              {formatExpediteServiceDisplay(
+                receipt.deliveryServiceCategory,
+                receipt.deliveryEstimateDays,
+              )}
+            </span>
+          </div>
         </div>
 
         <div className="border-t pt-3 print:break-inside-avoid">
@@ -209,6 +232,23 @@ export default async function ReceiptPage({ params }: { params: { token: string 
         </div>
 
         <div className="border-t pt-3 text-sm">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-muted-foreground">Subtotal item</span>
+            <span className="font-medium">{formatCurrency(itemsSubtotal)}</span>
+          </div>
+          {pricing.surchargePercent > 0 ? (
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-muted-foreground">
+                Tambahan {formatExpediteServiceDisplay(
+                  receipt.deliveryServiceCategory,
+                  receipt.deliveryEstimateDays,
+                )}{" "}
+                (
+                {formatSurchargePercent(pricing.surchargePercent)})
+              </span>
+              <span className="font-medium">{formatCurrency(pricing.surchargeAmount)}</span>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between gap-4">
             <span className="text-muted-foreground">Total</span>
             <span className="font-semibold">{formatCurrency(total)}</span>

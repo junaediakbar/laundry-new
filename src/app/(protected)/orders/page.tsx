@@ -7,6 +7,7 @@ import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 import { OrdersFilter } from "@/components/orders/orders-filter"
+import { formatDeliveryServiceSummary } from "@/lib/delivery-service"
 import { pickupDeliveryLabel } from "@/lib/pickup-delivery"
 
 type OrdersPageProps = {
@@ -51,6 +52,8 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       paymentStatus: string
       workflowStatus: string
       pickupDelivery: boolean | null
+      deliveryServiceCategory?: string | null
+      deliveryEstimateDays?: number | null
     }>
     total: number
   }
@@ -114,6 +117,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                 <TableHead>Invoice</TableHead>
                 <TableHead>Pelanggan</TableHead>
                 <TableHead>Item</TableHead>
+                <TableHead className="whitespace-nowrap">Percepatan</TableHead>
                 <TableHead className="whitespace-nowrap">Antar jemput</TableHead>
                 <TableHead>Pembayaran</TableHead>
                 <TableHead>Workflow</TableHead>
@@ -137,6 +141,12 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
+                    {formatDeliveryServiceSummary(
+                      order.deliveryServiceCategory,
+                      order.deliveryEstimateDays,
+                    )}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm">
                     {pickupDeliveryLabel(order.pickupDelivery)}
                   </TableCell>
                   <TableCell>
@@ -157,7 +167,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               ))}
               {!listError && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
                     Belum ada data pesanan.
                   </TableCell>
                 </TableRow>

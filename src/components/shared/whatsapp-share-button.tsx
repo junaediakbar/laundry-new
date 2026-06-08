@@ -10,6 +10,12 @@ import {
   parseDimMeter,
 } from "@/lib/order-item-display"
 import { paymentLabel, workflowLabel } from "@/components/shared/status-badge"
+import {
+  applyDeliverySurcharge,
+  deliveryServiceLabel,
+  formatExpediteServiceDisplay,
+  formatSurchargePercent,
+} from "@/lib/delivery-service"
 import { Share2 } from "lucide-react"
 
 function laundryBrandLine(notaNumber: number) {
@@ -53,6 +59,8 @@ type WhatsAppShareButtonProps = {
   paidAmount: string
   paymentStatus: string
   workflowStatus: string
+  deliveryServiceCategory?: string | null
+  deliveryEstimateDays?: number | null
   label?: string
 }
 
@@ -142,6 +150,8 @@ export function buildReceiptWhatsAppMessage(p: WhatsAppShareButtonProps): string
   const paid = toNum(p.paidAmount)
   const remaining = Math.max(total - paid, 0)
   const items = p.items.slice(0, 10)
+  const itemsSubtotal = p.items.reduce((sum, it) => sum + toNum(it.total), 0)
+  const pricing = applyDeliverySurcharge(itemsSubtotal, p.deliveryServiceCategory)
 
   const headerLines = [laundryBrandLine(p.notaNumber), `Kepada Yth. ${p.customerName}`]
   if (p.customerPhone?.trim()) {
@@ -154,6 +164,12 @@ export function buildReceiptWhatsAppMessage(p: WhatsAppShareButtonProps): string
   if (p.completedDate) {
     headerLines.push(`Tanggal selesai: ${formatReceiptDateTime(p.completedDate)}`)
   }
+  headerLines.push(
+    `Layanan percepatan: ${formatExpediteServiceDisplay(
+      p.deliveryServiceCategory,
+      p.deliveryEstimateDays,
+    )}`,
+  )
 
   const itemBlocks = items.map((it, i) => buildItemWaBlock(it, i + 1).join("\n"))
   let itemsText = itemBlocks.join("\n\n")
@@ -166,6 +182,12 @@ export function buildReceiptWhatsAppMessage(p: WhatsAppShareButtonProps): string
     "",
     itemsText,
     "",
+    `Subtotal item: ${formatRp(itemsSubtotal)}`,
+    ...(pricing.surchargePercent > 0
+      ? [
+          `Tambahan ${deliveryServiceLabel(p.deliveryServiceCategory)} (${formatSurchargePercent(pricing.surchargePercent)}): ${formatRp(pricing.surchargeAmount)}`,
+        ]
+      : []),
     `Total tagihan: ${formatRp(total)}`,
     "",
     `Dibayar: ${formatRp(paid)}`,

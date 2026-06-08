@@ -45,6 +45,7 @@ export async function createOrderAction(formData: FormData) {
     items,
     note: formData.get('note'),
     pickupDelivery: formData.get('pickupDelivery'),
+    deliveryServiceCategory: formData.get('deliveryServiceCategory'),
   });
 
   if (!parsed.success) {
@@ -67,6 +68,7 @@ export async function createOrderAction(formData: FormData) {
   upload.set('receivedDate', receivedDate);
   upload.set('completedDate', completedDate);
   upload.set('note', parsed.data.note || '');
+  upload.set('deliveryServiceCategory', parsed.data.deliveryServiceCategory);
   const pd = parsed.data.pickupDelivery;
   if (pd === null) {
     upload.set('pickupDelivery', '');

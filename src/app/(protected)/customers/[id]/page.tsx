@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { backendFetch } from "@/lib/backend"
 import { workflowLabel } from "@/components/shared/status-badge"
+import { formatDeliveryServiceSummary } from "@/lib/delivery-service"
 
 export default async function CustomerDetailPage({
   params,
@@ -30,7 +31,14 @@ export default async function CustomerDetailPage({
       longitude: number | null
     }>(`/api/v1/customers/${params.id}`),
     backendFetch<
-      Array<{ id: string; invoiceNumber: string; total: string; workflowStatus: string }>
+      Array<{
+        id: string
+        invoiceNumber: string
+        total: string
+        workflowStatus: string
+        deliveryServiceCategory?: string | null
+        deliveryEstimateDays?: number | null
+      }>
     >(`/api/v1/customers/${params.id}/orders?limit=10`),
   ]).catch(() => [null, []] as const)
 
@@ -104,6 +112,7 @@ export default async function CustomerDetailPage({
             <TableHeader>
               <TableRow>
                 <TableHead>Invoice</TableHead>
+                <TableHead>Percepatan</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
@@ -114,13 +123,19 @@ export default async function CustomerDetailPage({
                   <TableCell className="font-medium">
                     <NavigateButton href={`/orders/${order.id}`} label={order.invoiceNumber} variant="secondary" />
                   </TableCell>
+                  <TableCell className="text-sm">
+                    {formatDeliveryServiceSummary(
+                      order.deliveryServiceCategory,
+                      order.deliveryEstimateDays,
+                    )}
+                  </TableCell>
                   <TableCell>{Number(order.total).toLocaleString("id-ID")}</TableCell>
                   <TableCell>{workflowLabel(order.workflowStatus)}</TableCell>
                 </TableRow>
               ))}
               {safeOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
                     Belum ada histori pesanan.
                   </TableCell>
                 </TableRow>
