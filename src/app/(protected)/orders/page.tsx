@@ -5,10 +5,12 @@ import { ToastQuery } from "@/components/shared/toast-query"
 import { Card } from "@/components/ui/card"
 import { Pagination } from "@/components/ui/pagination"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { BackendFetchError, backendFetch } from "@/lib/backend"
 import { OrdersFilter } from "@/components/orders/orders-filter"
 import { formatDeliveryServiceSummary } from "@/lib/delivery-service"
 import { pickupDeliveryLabel } from "@/lib/pickup-delivery"
+import { formatDate, formatRemainingDays, remainingDaysMeta } from "@/lib/format"
 
 type OrdersPageProps = {
   searchParams?: {
@@ -33,6 +35,39 @@ function orderRowNumber(
   return rowOffset + index + 1
 }
 
+function isWorkflowDone(value: string) {
+  return value === "delivered" || value === "picked_up" || value === "finished"
+}
+
+function remainingDaysBadge(completedDate: string | null | undefined, workflowStatus: string) {
+  if (isWorkflowDone(workflowStatus)) {
+    return (
+      <Badge className="border-0 bg-emerald-100 px-2 py-0.5 text-emerald-700" variant="secondary">
+        Selesai
+      </Badge>
+    )
+  }
+
+  const meta = remainingDaysMeta(completedDate)
+  if (!meta) return null
+
+  const styles = meta.isLate
+    ? "bg-red-100 text-red-700"
+    : meta.unit === "hour"
+      ? "bg-orange-100 text-orange-700"
+      : meta.value <= 1
+        ? "bg-orange-100 text-orange-700"
+        : meta.value <= 3
+          ? "bg-yellow-100 text-yellow-700"
+          : "bg-emerald-100 text-emerald-700"
+
+  return (
+    <Badge className={`border-0 px-2 py-0.5 ${styles}`} variant="secondary">
+      {formatRemainingDays(completedDate)}
+    </Badge>
+  )
+}
+
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const q = searchParams?.q?.trim()
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
@@ -54,6 +89,8 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       pickupDelivery: boolean | null
       deliveryServiceCategory?: string | null
       deliveryEstimateDays?: number | null
+      receivedDate: string
+      completedDate?: string | null
     }>
     total: number
   }
@@ -117,6 +154,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                 <TableHead>Invoice</TableHead>
                 <TableHead>Pelanggan</TableHead>
                 <TableHead>Item</TableHead>
+                <TableHead className="whitespace-nowrap">Masuk / Keluar</TableHead>
                 <TableHead className="whitespace-nowrap">Percepatan</TableHead>
                 <TableHead className="whitespace-nowrap">Antar jemput</TableHead>
                 <TableHead>Pembayaran</TableHead>
@@ -141,10 +179,39 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                     </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
-                    {formatDeliveryServiceSummary(
-                      order.deliveryServiceCategory,
-                      order.deliveryEstimateDays,
-                    )}
+                    <div className="relative flex flex-col gap-2 pl-4">
+                      <div className="absolute bottom-1 left-1 top-1 w-px bg-border/70" />
+                      <div className="relative">
+                        <span className="absolute -left-4 top-1.5 h-2 w-2 rounded-full bg-slate-400" />
+                        <p className="text-xs text-muted-foreground">Masuk</p>
+                        <p className="text-sm font-medium">{formatDate(order.receivedDate)}</p>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute -left-4 top-1.5 h-2 w-2 rounded-full bg-emerald-500/80" />
+                        <p className="text-xs text-muted-foreground">Keluar</p>
+                        <p className="text-sm font-medium">
+                          {order.completedDate ? (
+                            formatDate(order.completedDate)
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-sm">
+                    <div className="flex flex-col gap-1">
+                      <p>
+                        {formatDeliveryServiceSummary(
+                          order.deliveryServiceCategory,
+                          order.deliveryEstimateDays,
+                        )}
+                      </p>
+                      {(() => {
+                        const badge = remainingDaysBadge(order.completedDate, order.workflowStatus)
+                        return badge ? <div>{badge}</div> : null
+                      })()}
+                    </div>
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm">
                     {pickupDeliveryLabel(order.pickupDelivery)}
@@ -167,7 +234,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               ))}
               {!listError && orders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
+                  <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
                     Belum ada data pesanan.
                   </TableCell>
                 </TableRow>

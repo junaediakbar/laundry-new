@@ -67,3 +67,31 @@ export function formatReceiptDateTime(value: Date | string) {
   const time = timePart.replace(':', '.');
   return `${datePart}, ${time}`;
 }
+
+export function formatRemainingDays(target: Date | string | null | undefined) {
+  const meta = remainingDaysMeta(target);
+  if (!meta) return '-';
+  const unitLabel = meta.unit === 'hour' ? 'jam' : 'hari';
+  if (meta.isLate) return `Telat ${meta.value} ${unitLabel}`;
+  return `Sisa ${meta.value} ${unitLabel}`;
+}
+
+export function remainingDaysMeta(target: Date | string | null | undefined) {
+  if (!target) return null;
+  const date = toDateAssumeWita(target);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const diffMs = date.getTime() - Date.now();
+  const absMs = Math.abs(diffMs);
+  const hourMs = 60 * 60 * 1000;
+  const dayMs = 24 * hourMs;
+  const isLate = diffMs < 0;
+
+  if (absMs < dayMs) {
+    const value = Math.max(1, Math.ceil(absMs / hourMs));
+    return { value, unit: 'hour' as const, isLate };
+  }
+
+  const value = Math.ceil(absMs / dayMs);
+  return { value, unit: 'day' as const, isLate };
+}
