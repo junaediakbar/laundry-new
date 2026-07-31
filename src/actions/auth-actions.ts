@@ -42,8 +42,29 @@ export async function loginAction(formData: FormData) {
     | null;
 
   if (!res || !res.ok || !json || !('ok' in json) || json.ok !== true) {
-    const msg = (json && 'error' in json && json.error?.message) || 'Email atau password salah';
-    redirect(`/login?error=${encodeURIComponent(msg)}`);
+    // Determine error type: server error vs credentials error
+    let errorType = 'credentials';
+    let errorMsg = 'Email atau password salah';
+
+    if (!res) {
+      // Network error or fetch failed
+      errorType = 'server';
+      errorMsg = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.';
+    } else if (res.status >= 500) {
+      // Server error (5xx)
+      errorType = 'server';
+      errorMsg = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.';
+    } else if (res.status === 401 || res.status === 400) {
+      // Credentials error (401 Unauthorized, 400 Bad Request)
+      errorType = 'credentials';
+      errorMsg = (json && 'error' in json && json.error?.message) || 'Email atau password salah';
+    } else {
+      // Other errors (4xx except 401/400)
+      errorType = 'server';
+      errorMsg = (json && 'error' in json && json.error?.message) || `Terjadi kesalahan (${res.status})`;
+    }
+
+    redirect(`/login?error=${encodeURIComponent(errorMsg)}&errorType=${errorType}`);
   }
 
   const backendToken = json.data.token;

@@ -8,11 +8,18 @@ import { Droplets, Sparkles } from "lucide-react"
 type LoginPageProps = {
   searchParams?: {
     error?: string
+    errorType?: 'credentials' | 'server'
   }
 }
 
 export default function LoginPage({ searchParams }: LoginPageProps) {
   const error = searchParams?.error
+  const errorType = searchParams?.errorType || 'credentials'
+
+  // Determine styling based on error type
+  const errorClass = errorType === 'server'
+    ? 'border-orange-200 bg-orange-50 text-orange-700'
+    : 'border-red-200 bg-red-50 text-red-700'
 
   return (
     <div className="relative flex min-h-[100dvh] min-h-screen flex-col lg:grid lg:min-h-screen lg:grid-cols-2">
@@ -88,7 +95,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
             </div>
             {error ? (
               <p
-                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+                className={`rounded-lg border px-3 py-2 text-sm ${errorClass}`}
                 role="alert"
               >
                 {error}
