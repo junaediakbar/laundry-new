@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { backendFetch } from '@/lib/backend';
+import { backendFetch, BackendFetchError } from '@/lib/backend';
 import { teamMemberSchema, updateTeamMemberSchema } from '@/lib/validations';
 
 export async function createTeamMemberAction(formData: FormData) {
@@ -70,7 +70,12 @@ export async function updateTeamMemberAction(employeeId: string, formData: FormD
 }
 
 export async function deleteEmployeeAction(employeeId: string) {
-  await backendFetch(`/api/v1/employees/${employeeId}`, { method: 'DELETE' }).catch(() => null);
+  try {
+    await backendFetch(`/api/v1/employees/${employeeId}`, { method: 'DELETE' });
+  } catch (err) {
+    const message = err instanceof BackendFetchError ? err.message : 'Gagal menghapus karyawan';
+    redirect(`/employees/${employeeId}/edit?error=${encodeURIComponent(message)}`);
+  }
   revalidatePath('/employees');
   redirect('/employees');
 }

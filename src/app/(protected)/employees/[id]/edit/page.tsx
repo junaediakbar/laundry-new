@@ -31,7 +31,7 @@ export default async function EditEmployeePage({ params }: { params: { id: strin
 
   return (
     <div className="space-y-6">
-      <ToastQuery successParam="saved" successMessage="Data berhasil disimpan" />
+      <ToastQuery successParam="saved" successMessage="Data berhasil disimpan" errorParam="error" />
       <PageHeader
         title={`Kelola: ${employee.name}`}
         description="Ubah nama, email, role, password, dan status aktif — satu formulir untuk profil dan akun."

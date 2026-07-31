@@ -23,7 +23,7 @@ export const teamMemberSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
   isActive: z
     .union([z.literal('on'), z.literal('true'), z.literal('false')])
-    .optional()
+    .nullish()
     .transform((value) => value === 'on' || value === 'true'),
   email: z.string().email('Email tidak valid'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
@@ -47,7 +47,7 @@ export const updateTeamMemberSchema = z
     ]),
     isActive: z
       .union([z.literal('on'), z.literal('true'), z.literal('false')])
-      .optional()
+      .nullish()
       .transform((value) => value === 'on' || value === 'true'),
     password: z.string().optional().or(z.literal('')),
   })
