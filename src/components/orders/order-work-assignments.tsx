@@ -737,7 +737,12 @@ function TaskGroup({
       </div>
       <div className="space-y-3">
         {tasks.map((task) => {
-          const selectedEmployeeId = selectedByItemAndTask.get(`${itemId}:${task.key}`) ?? ""
+          const isBensinTask = task.key === "pickup_bensin" || task.key === "dropoff_bensin"
+          const bensinDefaultId = isBensinTask
+            ? employees.find((e) => e.name.trim().toLowerCase() === "pertalite")?.id ?? ""
+            : ""
+          const selectedEmployeeId =
+            selectedByItemAndTask.get(`${itemId}:${task.key}`) ?? bensinDefaultId
           const pct = getPercent(task.key, task.percent)
           const rowLocked =
             Boolean(lockFilledAssignmentsForEmployee) && selectedEmployeeId.trim() !== ""

@@ -36,7 +36,7 @@ export function ProtectedShell({
           <Sidebar role={role} />
         </div>
 
-        <div className="flex min-h-0 min-h-[100dvh] flex-1 flex-col md:min-h-screen">
+        <div className="flex min-h-0 min-h-[100dvh] min-w-0 flex-1 flex-col md:min-h-screen">
           <header
             className={cn(
               "safe-top safe-x sticky top-0 z-40 flex items-center justify-between border-b border-border/60 bg-background/80 px-4 py-3 backdrop-blur-md md:hidden",

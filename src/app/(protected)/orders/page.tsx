@@ -146,9 +146,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       ) : null}
 
       <Card className="p-0">
-        <div className="overflow-x-auto">
+        <div className="max-h-[65vh] overflow-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 z-10 bg-background">
               <TableRow>
                 <TableHead className="w-[1%] whitespace-nowrap text-center">No</TableHead>
                 <TableHead>Invoice</TableHead>
