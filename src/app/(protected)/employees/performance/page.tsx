@@ -19,6 +19,7 @@ type EmployeePerformancePageProps = {
     employeeId?: string
     startDate?: string
     endDate?: string
+    dateBasis?: string
   }
 }
 
@@ -42,7 +43,7 @@ type DetailRow = {
   tasks?: { taskType: string; amount: string }[]
 }
 
-type Employee = { id: string; name: string; role?: string }
+type Employee = { id: string; name: string; role?: string; isActive?: boolean }
 
 const DASHBOARD_TZ = "Asia/Makassar"
 
@@ -156,6 +157,7 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
   }
 
   const selectedEmployeeId = searchParams?.employeeId
+  const dateBasis = searchParams?.dateBasis === "work" ? "work" : "order"
 
   // Fetch employees and performance data
   const [employeesRaw, aggregateData, employeeInfo, detailData] = await Promise.all([
@@ -168,7 +170,7 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
         workAmount: string
         totalAmount: string
       }>
-    >(`/api/v1/employees/performance?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`).catch(
+    >(`/api/v1/employees/performance?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&dateBasis=${dateBasis}`).catch(
       () => [],
     ),
     selectedEmployeeId
@@ -176,12 +178,13 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
       : null,
     selectedEmployeeId
       ? backendFetch<DetailRow[]>(
-          `/api/v1/employees/${selectedEmployeeId}/performance-detail?month=${encodeURIComponent(displayMonth)}`,
+          `/api/v1/employees/${selectedEmployeeId}/performance-detail?month=${encodeURIComponent(displayMonth)}&dateBasis=${dateBasis}`,
         ).catch(() => [])
       : null,
   ])
 
   const employees = Array.isArray(employeesRaw) ? employeesRaw : []
+  const activeEmployees = employees.filter((emp) => emp.isActive !== false)
   const aggregateRows = Array.isArray(aggregateData) ? aggregateData : []
 
   const numericAggregate = aggregateRows.map((r) => ({
@@ -237,12 +240,20 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
               defaultValue={displayMonth}
             />
             <select
+              name="dateBasis"
+              defaultValue={dateBasis}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="order">Berdasarkan Tanggal Nota</option>
+              <option value="work">Berdasarkan Tanggal Pengerjaan</option>
+            </select>
+            <select
               name="employeeId"
               defaultValue={selectedEmployeeId ?? ""}
               className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
               <option value="">Semua Karyawan</option>
-              {employees.map((emp) => (
+              {activeEmployees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.name}
                 </option>
@@ -252,7 +263,8 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
           </div>
         </form>
         <p className="mt-3 text-xs text-muted-foreground">
-          Rentang: {startDate} s/d {endDate} (WITA)
+          Rentang: {startDate} s/d {endDate} (WITA) ·{" "}
+          {dateBasis === "work" ? "berdasarkan tanggal pengerjaan" : "berdasarkan tanggal nota"}
         </p>
       </Card>
 
