@@ -244,8 +244,8 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
               defaultValue={dateBasis}
               className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="order">Berdasarkan Tanggal Nota</option>
-              <option value="work">Berdasarkan Tanggal Pengerjaan</option>
+              <option value="order">Tanggal Nota</option>
+              <option value="work">Tanggal Pengerjaan</option>
             </select>
             <select
               name="employeeId"
