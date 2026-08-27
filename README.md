@@ -1,82 +1,59 @@
-# Laundry Record Management
+# Laundry Record Management (Frontend)
 
-Web app manajemen data laundry untuk usaha kecil dengan fokus CRUD cepat, alur kerja jelas, dan pelaporan sederhana.
+Web app manajemen data laundry untuk usaha kecil: CRUD cepat, alur kerja jelas, dan pelaporan sederhana.
+
+Repo ini adalah **frontend Next.js (BFF)**. Semua data diambil dari **backend Go** terpisah lewat HTTP (`/api/v1/...`). Tidak ada koneksi database langsung dari frontend.
 
 ## Tech Stack
 
-- Next.js 14 (App Router)
+- Next.js 14 (App Router) + React 18
 - TypeScript
-- Tailwind CSS
-- shadcn/ui style components
-- Prisma ORM
-- Supabase PostgreSQL
-- Supabase Auth
-- Zod
+- Tailwind CSS 3
+- Komponen bergaya shadcn/ui (cva + clsx + tailwind-merge + lucide-react)
+- Zod (validasi input)
+- Recharts (grafik dashboard)
+- react-toastify (notifikasi), date-fns, lodash
+
+## Arsitektur
+
+- **Data**: Server Actions (`src/actions/*`) memanggil backend Go via helper `backendFetch` (`src/lib/backend.ts`). Base URL diatur lewat `BACKEND_BASE_URL` (default `http://localhost:8080`), request ke path `/api/v1/...`.
+- **Auth**: `loginAction` mem-POST kredensial ke backend `/api/v1/auth/login`, lalu frontend menerbitkan **cookie session bertanda tangan HMAC-SHA256** (`AUTH_SECRET`). `middleware.ts` memverifikasi cookie di setiap request area `(protected)`.
+- **Role**: `owner`, `admin`, `cashier`. Session juga menyimpan `employeeId`.
+- **Nota publik**: halaman `/receipt/[token]` (tanpa login) mengambil data dari `/api/v1/public/receipts/`.
 
 ## Fitur
 
-- Login dan logout (Supabase Auth)
+- Login / logout (cookie session bertanda tangan)
 - CRUD pelanggan + koordinat lokasi (latitude/longitude) dan link Google Maps
 - CRUD jenis pesanan (Service Types)
-- Nota / pesanan:
-  - Multi item layanan (Order Items)
-  - Workflow: `received`, `washing`, `drying`, `ironing`, `finished`, `picked_up`
-  - Pembayaran + status otomatis: `unpaid`, `partial`, `paid`
-  - Input tanggal masuk (`receivedDate`) dan tanggal selesai (`completedDate`)
-  - Upload gambar nota (attachments) via Supabase Storage
-- Karyawan + performa:
-  - CRUD karyawan
-  - Upah/pengerjaan per item (Work Assignments)
-  - Halaman performa karyawan
-- Perencanaan pengiriman:
-  - Buat rencana pengiriman dari daftar pelanggan yang punya koordinat
-  - Urutan rute sederhana (nearest-neighbor) + link Google Maps Directions
-- Laporan:
-  - Filter tanggal
-  - Export CSV
-- WhatsApp (opsional, transactional notifications):
-  - Preview + konfirmasi sebelum kirim
-  - Edge Functions (send + webhook) + log tabel
+- Nota / pesanan: multi item, workflow status, pembayaran, upload gambar nota (attachments)
+- Karyawan + halaman performa (Work Assignments)
+- Perencanaan pengiriman: rencana rute dari pelanggan berkoordinat, urutan nearest-neighbor + link Google Maps Directions
+- Laporan: filter tanggal + export CSV
+- Manajemen user (owner/admin/cashier)
+- WhatsApp (opsional, notifikasi transactional lewat backend)
 
-## Struktur Aplikasi
+> Aturan bisnis (nomor invoice, perhitungan total, status pembayaran, tanggal otomatis) ditangani di **backend Go**, bukan di frontend ini.
+
+## Struktur
 
 ```text
 src/
   app/
     (auth)/login
     (protected)/
-      dashboard
-      customers
-      delivery-planning
-      employees
-      orders
-      reports
-      service-types
-      whatsapp
-    api/
-      orders/[id]/attachments
-      whatsapp/preview
-      whatsapp/send
-  actions/
-  components/
+      dashboard  customers  orders  service-types
+      employees (+ performance)  delivery-planning
+      reports (+ export)  users  whatsapp
+    receipt/[token]        # nota publik
+  actions/                 # server actions (panggil backend)
+  components/              # UI per domain + shared/ui
   lib/
-prisma/
-  migrations/
-  schema.prisma
-  seed.ts
-supabase/
-  functions/
-  sql/
+    backend.ts             # backendFetch helper
+    auth-session.ts        # sign/verify cookie session
+    validations.ts         # skema zod
+  middleware.ts            # proteksi route + verifikasi session
 ```
-
-## Aturan Bisnis
-
-- Nomor invoice otomatis: `LDR-YYYYMMDD-XXX`
-- Total order: `quantity * unit_price - discount`
-- Status pembayaran: `unpaid`, `partial`, `paid`
-- Jika total pembayaran >= total order, status jadi `paid`
-- Saat workflow jadi `picked_up`, `pickup_date` otomatis terisi
-- Saat workflow jadi `finished`, `completed_date` otomatis terisi (jika belum ada)
 
 ## Setup
 
@@ -92,100 +69,44 @@ npm install
 cp .env.example .env
 ```
 
-3. Isi variabel berikut di `.env` (wajib):
+3. Isi variabel di `.env`:
 
-- `DATABASE_URL`
-- `DIRECT_URL`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+| Variabel | Wajib | Keterangan |
+| --- | --- | --- |
+| `BACKEND_BASE_URL` | ✅ | URL backend Go, mis. `http://localhost:8080` |
+| `BACKEND_API_KEY` | ✅ | API key untuk otentikasi frontend → backend |
+| `AUTH_SECRET` | ✅ | Secret HMAC untuk menandatangani cookie session (string acak panjang) |
+| `ADMIN_EMAIL` | ✅ | Kredensial admin awal |
+| `ADMIN_PASSWORD` | ✅ | Kredensial admin awal |
+| `REPORT_TZ` | opsional | Timezone untuk perhitungan laporan (default server) |
 
-Opsional (disarankan):
+4. Jalankan backend Go terlebih dulu (lihat repo backend), pastikan tersedia di `BACKEND_BASE_URL`.
 
-- `SUPABASE_FUNCTION_INTERNAL_TOKEN` (untuk trigger Edge Function WhatsApp secara aman)
-- `WHATSAPP_ADMIN_EMAILS` (allowlist email admin untuk halaman `/whatsapp`)
-
-Catatan deploy (Vercel):
-
-- Jika `db.<ref>.supabase.co` tidak bisa diakses dari environment deploy (umumnya karena IPv6-only), gunakan connection string **pooler** Supabase sebagai `DATABASE_URL` (port 6543).
-- Simpan connection string direct sebagai `DIRECT_URL` untuk kebutuhan migrasi (port 5432).
-- Jika memakai pooler (PgBouncer) dan muncul error `prepared statement "...\" does not exist` / `already exists`, pastikan `DATABASE_URL` menyertakan `pgbouncer=true&statement_cache_size=0&connection_limit=1`.
-
-4. Generate Prisma Client:
-
-```bash
-npm run db:generate
-```
-
-5. Jalankan migration:
-
-```bash
-npm run db:migrate
-```
-
-6. Seed data:
-
-```bash
-npm run db:seed
-```
-
-Seed cepat (opsional):
-
-```bash
-SEED_CUSTOMER_COUNT=30 SEED_ORDER_COUNT=30 npm run db:seed
-```
-
-7. Jalankan development server:
+5. Jalankan development server:
 
 ```bash
 npm run dev
 ```
 
-App akan tersedia di `http://localhost:3000`.
+App tersedia di `http://localhost:3000`.
 
-## Setup Storage (Gambar Nota)
+## Scripts
 
-Fitur upload gambar nota menggunakan Supabase Storage bucket `order-images`.
+```bash
+npm run dev        # development server
+npm run build      # production build
+npm run start      # jalankan hasil build
+npm run lint       # eslint (next lint)
+npm run typecheck  # tsc --noEmit
+```
 
-- Buat bucket: `order-images`
-- Mode yang paling mudah: set bucket sebagai Public
-- Policy minimal (jika memakai Supabase Auth):
-  - allow authenticated users upload ke bucket `order-images`
-  - allow read public (atau tetap public bucket)
+## Deploy (Vercel)
 
-Catatan: attachment yang tersimpan tercatat di tabel `order_attachments`.
+- Set semua env di atas pada project Vercel.
+- Pastikan `BACKEND_BASE_URL` menunjuk ke backend Go yang bisa diakses publik dan `AUTH_SECRET` konsisten antar environment agar cookie session valid.
 
-## WhatsApp Notifications (Opsional)
+## Catatan UX
 
-Sistem WhatsApp bersifat transactional (template messages), tidak ada fitur chat.
-
-Komponen:
-
-- Next.js admin tools: `/whatsapp`
-- Edge Function: `send-order-whatsapp` dan `whatsapp-webhook`
-- DB: `whatsapp_templates_map`, `whatsapp_message_logs`, `whatsapp_webhook_logs` (lihat `supabase/sql/whatsapp_notifications.sql`)
-
-Secrets yang harus diset di Supabase Edge Functions:
-
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `WHATSAPP_ACCESS_TOKEN`
-- `WHATSAPP_PHONE_NUMBER_ID`
-- `WHATSAPP_VERIFY_TOKEN`
-- `FUNCTION_INTERNAL_TOKEN` (harus sama dengan `SUPABASE_FUNCTION_INTERNAL_TOKEN` di Next.js)
-- `APP_PUBLIC_URL`
-
-## Performa & UX
-
-- Perpindahan halaman di production bisa terasa lebih lambat karena server-side render + middleware auth + query database (latency Vercel ↔ Supabase).
-- Navigasi tombol “Detail” memakai prefetch berbasis intent (hover/focus) agar tetap responsif tanpa membebani halaman list.
-- Tombol login memakai state pending agar tidak bisa submit berkali-kali.
-
-## Akun dan Role
-
-Role yang digunakan:
-
-- `owner`
-- `admin`
-- `cashier`
-
-Authentication menggunakan Supabase Auth. Pastikan user sudah tersedia di Supabase.
+- Perpindahan halaman di production dipengaruhi latency frontend ↔ backend Go.
+- Tombol "Detail" memakai prefetch berbasis intent (hover/focus).
+- Tombol login memakai state pending agar tidak submit ganda.
