@@ -12,6 +12,7 @@ import { labelEmployeePerformanceTask } from "@/lib/employee-task-labels"
 import { getSession } from "@/lib/auth"
 import { inOwnerGroupForViewer, performanceRowIsOwnerLike } from "@/lib/owner-group"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 
 type EmployeePerformancePageProps = {
   searchParams?: {
@@ -40,7 +41,8 @@ type DetailRow = {
   pickupAmount: string
   workAmount: string
   totalAmount: string
-  tasks?: { taskType: string; amount: string }[]
+  orderTotal?: string
+  tasks?: { taskType: string; percent?: string; amount: string }[]
 }
 
 type Employee = { id: string; name: string; role?: string; isActive?: boolean }
@@ -139,6 +141,10 @@ function getStatusBadge(status: string) {
 export default async function EmployeePerformancePage({ searchParams }: EmployeePerformancePageProps) {
   const session = await getSession()
   const viewerRole = session?.role
+  // Performa karyawan hanya untuk Owner & Admin.
+  if (viewerRole !== "owner" && viewerRole !== "admin") {
+    redirect("/dashboard")
+  }
 
   // Parse month or date range
   const thisMonth = currentMonthYmdRange(DASHBOARD_TZ)
@@ -296,6 +302,7 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                     <TableHead>Tanggal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Detail tugas</TableHead>
+                    <TableHead className="text-right">Harga Total</TableHead>
                     <TableHead className="text-right">Antar Jemput</TableHead>
                     <TableHead className="text-right">Pengerjaan</TableHead>
                     <TableHead className="text-right">Total</TableHead>
@@ -336,6 +343,9 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                                 <span className="text-foreground">
                                   {labelEmployeePerformanceTask(t.taskType)}
                                 </span>
+                                {t.percent ? (
+                                  <span className="text-muted-foreground"> · {Number(t.percent)}%</span>
+                                ) : null}
                                 <span className="tabular-nums"> · {formatCurrency(Number(t.amount))}</span>
                               </li>
                             ))}
@@ -344,6 +354,7 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                           "—"
                         )}
                       </TableCell>
+                      <TableCell className="text-right tabular-nums">{formatCurrency(Number(row.orderTotal ?? 0))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(row.pickupAmount))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(Number(row.workAmount))}</TableCell>
                       <TableCell className="text-right font-semibold">{formatCurrency(Number(row.totalAmount))}</TableCell>
@@ -351,7 +362,7 @@ export default async function EmployeePerformancePage({ searchParams }: Employee
                   ))}
                   {detailRows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="py-10 text-center text-muted-foreground">
+                      <TableCell colSpan={10} className="py-10 text-center text-muted-foreground">
                         Belum ada data performa pada rentang tanggal ini.
                       </TableCell>
                     </TableRow>

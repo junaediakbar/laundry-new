@@ -32,7 +32,6 @@ const staffMenus = [
 const employeeMenus = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/orders", label: "Daftar Nota", icon: ReceiptText },
-  { href: "/employees/performance", label: "Performa", icon: BarChart3 },
 ] as const
 
 type SidebarProps = {
@@ -43,7 +42,20 @@ type SidebarProps = {
 
 export function Sidebar({ className, onNavigate, role }: SidebarProps) {
   const pathname = usePathname()
-  const menus = role === "employee" ? employeeMenus : staffMenus
+  const isAdmin = role === "owner" || role === "admin"
+  const menus =
+    role === "employee"
+      ? employeeMenus
+      : isAdmin
+        ? [
+            ...staffMenus,
+            { href: "/employees/performance", label: "Performa Karyawan", icon: BarChart3 },
+          ]
+        : staffMenus
+  // Highlight menu paling spesifik saja (mis. /employees/performance, bukan /employees).
+  const activeHref = menus
+    .filter((m) => pathname.startsWith(m.href))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href
 
   return (
     <aside
@@ -67,7 +79,7 @@ export function Sidebar({ className, onNavigate, role }: SidebarProps) {
       <nav className="flex-1 space-y-1 overflow-y-auto p-3 [scrollbar-width:thin]">
         {menus.map((menu) => {
           const Icon = menu.icon
-          const active = pathname.startsWith(menu.href)
+          const active = menu.href === activeHref
           return (
             <Link
               key={menu.href}

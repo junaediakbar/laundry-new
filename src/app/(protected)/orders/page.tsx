@@ -18,6 +18,11 @@ type OrdersPageProps = {
     page?: string
     sort?: string
     dir?: string
+    workflow?: string
+    paymentStatus?: string
+    category?: string
+    startDate?: string
+    endDate?: string
   }
 }
 
@@ -73,6 +78,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const page = Math.max(1, Number(searchParams?.page ?? 1) || 1)
   const sort = (searchParams?.sort ?? "created_at").trim()
   const dir = (searchParams?.dir ?? "desc").trim()
+  const workflow = (searchParams?.workflow ?? "").trim()
+  const paymentStatus = (searchParams?.paymentStatus ?? "").trim()
+  const category = (searchParams?.category ?? "").trim()
+  const startDate = (searchParams?.startDate ?? "").trim()
+  const endDate = (searchParams?.endDate ?? "").trim()
   const pageSize = 20
 
   type ListShape = {
@@ -98,9 +108,19 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   let result: ListShape = { items: [], total: 0 }
   let listError: string | null = null
   try {
-    result = await backendFetch<ListShape>(
-      `/api/v1/orders?q=${encodeURIComponent(q ?? "")}&page=${page}&pageSize=${pageSize}&sort=${encodeURIComponent(sort)}&dir=${encodeURIComponent(dir)}`,
-    )
+    const params = new URLSearchParams({
+      q: q ?? "",
+      page: String(page),
+      pageSize: String(pageSize),
+      sort,
+      dir,
+    })
+    if (workflow) params.set("workflow", workflow)
+    if (paymentStatus) params.set("paymentStatus", paymentStatus)
+    if (category) params.set("category", category)
+    if (startDate) params.set("startDate", startDate)
+    if (endDate) params.set("endDate", endDate)
+    result = await backendFetch<ListShape>(`/api/v1/orders?${params.toString()}`)
   } catch (e) {
     const msg =
       e instanceof BackendFetchError
@@ -120,6 +140,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     if (q) params.set("q", q)
     if (sort) params.set("sort", sort)
     if (dir) params.set("dir", dir)
+    if (workflow) params.set("workflow", workflow)
+    if (paymentStatus) params.set("paymentStatus", paymentStatus)
+    if (category) params.set("category", category)
+    if (startDate) params.set("startDate", startDate)
+    if (endDate) params.set("endDate", endDate)
     params.set("page", String(nextPage))
     const query = params.toString()
     return query ? `/orders?${query}` : "/orders"
@@ -131,7 +156,16 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
       <PageHeader title="Nota" actionHref="/orders/new" actionLabel="Tambah Nota" />
 
       {/* Filter interaktif — client component dengan debounce */}
-      <OrdersFilter defaultQ={q} defaultSort={sort} defaultDir={dir} />
+      <OrdersFilter
+        defaultQ={q}
+        defaultSort={sort}
+        defaultDir={dir}
+        defaultWorkflow={workflow}
+        defaultPayment={paymentStatus}
+        defaultCategory={category}
+        defaultStartDate={startDate}
+        defaultEndDate={endDate}
+      />
 
       {listError ? (
         <Card className="border-destructive/40 bg-destructive/5">
@@ -188,7 +222,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                       </div>
                       <div className="relative">
                         <span className="absolute -left-4 top-1.5 h-2 w-2 rounded-full bg-emerald-500/80" />
-                        <p className="text-xs text-muted-foreground">Keluar</p>
+                        <p className="text-xs text-muted-foreground">
+                          {isWorkflowDone(order.workflowStatus)
+                            ? "Tanggal selesai"
+                            : "Target penyelesaian"}
+                        </p>
                         <p className="text-sm font-medium">
                           {order.completedDate ? (
                             formatDate(order.completedDate)
