@@ -3,6 +3,7 @@ import Link from "next/link"
 import { CreateOrderForm } from "@/components/orders/create-order-form"
 import { CustomerSelect } from "@/components/orders/customer-select"
 import { OrderItemsForm } from "@/components/orders/order-items-form"
+import { OrderScheduleFields } from "@/components/orders/order-schedule-fields"
 import { PageHeader } from "@/components/shared/page-header"
 import { SubmitButton } from "@/components/shared/submit-button"
 import { ToastQuery } from "@/components/shared/toast-query"
@@ -59,17 +60,15 @@ export default async function NewOrderPage() {
 
           <Card>
             <div className="space-y-3">
+              <h2 className="font-semibold">Layanan percepatan</h2>
+              <DeliveryServiceSelect />
+            </div>
+          </Card>
+
+          <Card>
+            <div className="space-y-3">
               <h2 className="font-semibold">Jadwal</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="receivedDate">Tanggal &amp; jam masuk</Label>
-                  <Input id="receivedDate" name="receivedDate" type="datetime-local" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="completedDate">Tanggal &amp; jam selesai</Label>
-                  <Input id="completedDate" name="completedDate" type="datetime-local" />
-                </div>
-              </div>
+              <OrderScheduleFields />
             </div>
           </Card>
 
@@ -93,13 +92,6 @@ export default async function NewOrderPage() {
           </Card>
 
           <OrderItemsForm serviceTypes={serviceTypeOptions} />
-
-          <Card>
-            <div className="space-y-3">
-              <h2 className="font-semibold">Layanan percepatan</h2>
-              <DeliveryServiceSelect />
-            </div>
-          </Card>
 
           <OrderPricingSummary />
 

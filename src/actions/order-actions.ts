@@ -9,6 +9,7 @@ import {
   orderSchema,
   paymentSchema,
 } from '@/lib/validations';
+import { deliveryEstimateDaysFor } from '@/lib/delivery-service';
 
 function normalizeWitaDateTimeInput(value: string | undefined) {
   const raw = (value ?? '').trim();
@@ -22,6 +23,14 @@ function normalizeWitaDateTimeInput(value: string | undefined) {
   const hm = m[2];
   const ss = m[3] ?? '00';
   return `${ymd}T${hm}:${ss}+08:00`;
+}
+
+/** Tanggal selesai WITA bila form kosong: tanggal masuk + estimasi hari kalender kategori. */
+function witaCompletedFallback(receivedRaw: string, category: string): string {
+  const days = deliveryEstimateDaysFor(category) ?? 0;
+  const base = receivedRaw ? new Date(receivedRaw) : new Date();
+  const ms = base.getTime() + days * 86_400_000;
+  return new Date(ms + 8 * 3_600_000).toISOString().slice(0, 19) + '+08:00';
 }
 
 export async function createOrderAction(formData: FormData) {
@@ -61,7 +70,13 @@ export async function createOrderAction(formData: FormData) {
     .slice(0, 3);
 
   const receivedDate = normalizeWitaDateTimeInput(parsed.data.receivedDate);
-  const completedDate = normalizeWitaDateTimeInput(parsed.data.completedDate);
+  let completedDate = normalizeWitaDateTimeInput(parsed.data.completedDate);
+  if (!completedDate) {
+    completedDate = witaCompletedFallback(
+      receivedDate,
+      parsed.data.deliveryServiceCategory,
+    );
+  }
 
   const upload = new FormData();
   upload.set('customerId', parsed.data.customerId);
